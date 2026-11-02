@@ -276,6 +276,11 @@
   color: #f4e3bb;
 }
 
+.tool-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .live-chip,
 .complete-chip {
   display: inline-flex;

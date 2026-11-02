@@ -1,8 +1,9 @@
 import { Line } from '@react-three/drei';
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { computePolarity } from '../chem/analysis';
-import { normalize, sub } from '../chem/bondRules';
+import { computePolarity, lonePairCount, valenceUsage } from '../chem/analysis';
+import { lonePairDirections, normalize, sub } from '../chem/bondRules';
+import { getElement } from '../chem/elements';
 import type { Atom, Bond, Vec3 } from '../chem/types';
 import { WorldLabel } from './WorldLabel';
 
@@ -197,6 +198,108 @@ function Arrow3D({ start, end, color, radius, headLength }: Arrow3DProps) {
         <coneGeometry args={[radius * 2.8, geometry.head, 10]} />
         <meshBasicMaterial color={color} transparent opacity={0.95} />
       </mesh>
+    </group>
+  );
+}
+
+export function LonePairOverlay({
+  atoms,
+  bonds,
+  visible,
+}: {
+  atoms: Atom[];
+  bonds: Bond[];
+  visible: boolean;
+}) {
+  const markers = useMemo(() => {
+    if (!visible) return [];
+    const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+    const usage = valenceUsage(atoms, bonds);
+    const result: { key: string; position: Vec3 }[] = [];
+    for (const atom of atoms) {
+      const atomBonds = bonds.filter(
+        (bond) => (bond.a === atom.id || bond.b === atom.id) && !bond.ionic,
+      );
+      if (atomBonds.length === 0) continue;
+      const pairs = lonePairCount(atom.element, usage[atom.id] ?? 0);
+      if (pairs <= 0) continue;
+      const neighbors = atomBonds
+        .map((bond) => byId.get(bond.a === atom.id ? bond.b : bond.a))
+        .filter((neighbor): neighbor is Atom => Boolean(neighbor))
+        .map((neighbor) =>
+          normalize([neighbor.position[0] - atom.position[0], neighbor.position[1] - atom.position[1], neighbor.position[2] - atom.position[2]]),
+        );
+      const directions = lonePairDirections(neighbors, Math.min(pairs, 3));
+      const radius = getElement(atom.element).radius + 0.24;
+      directions.forEach((direction, index) => {
+        result.push({
+          key: `${atom.id}-${index}`,
+          position: [
+            atom.position[0] + direction[0] * radius,
+            atom.position[1] + direction[1] * radius,
+            atom.position[2] + direction[2] * radius,
+          ],
+        });
+      });
+    }
+    return result;
+  }, [atoms, bonds, visible]);
+
+  if (markers.length === 0) return null;
+  return (
+    <group>
+      {markers.map((marker) => (
+        <mesh key={marker.key} position={marker.position}>
+          <sphereGeometry args={[0.09, 16, 12]} />
+          <meshBasicMaterial color="#e9dfc8" transparent opacity={0.72} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+export function MeasurementOverlay({
+  atoms,
+  fromId,
+  toId,
+}: {
+  atoms: Atom[];
+  fromId: string | null;
+  toId: string | null;
+}) {
+  const measurement = useMemo(() => {
+    if (!fromId || !toId || fromId === toId) return null;
+    const from = atoms.find((atom) => atom.id === fromId);
+    const to = atoms.find((atom) => atom.id === toId);
+    if (!from || !to) return null;
+    const value = Math.hypot(
+      to.position[0] - from.position[0],
+      to.position[1] - from.position[1],
+      to.position[2] - from.position[2],
+    );
+    return { from: from.position, to: to.position, value };
+  }, [atoms, fromId, toId]);
+  if (!measurement) return null;
+  const midpoint: Vec3 = [
+    (measurement.from[0] + measurement.to[0]) / 2,
+    (measurement.from[1] + measurement.to[1]) / 2 + 0.18,
+    (measurement.from[2] + measurement.to[2]) / 2,
+  ];
+  return (
+    <group>
+      <Line
+        points={[measurement.from, measurement.to]}
+        color="#e0b866"
+        lineWidth={2}
+        dashed
+        dashSize={0.12}
+        gapSize={0.1}
+        transparent
+        opacity={0.85}
+      />
+      <group position={midpoint}>
+        <WorldLabel text={`${measurement.value.toFixed(2)}`} color="#f4e3bb" width={0.66} height={0.25} />
+      </group>
     </group>
   );
 }

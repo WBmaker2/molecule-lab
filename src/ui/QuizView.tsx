@@ -1,48 +1,52 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { getMolecule, MOLECULES } from '../chem/molecules';
+import { useAppStore } from '../stores/appStore';
+import { WebGLGate } from './WebGLGate';
 import { buildQuiz } from '../lib/quiz';
 import { PreviewScene } from '../scene/PreviewScene';
+import { quizScore, useQuizStore } from '../stores/quizStore';
 import { ArrowIcon, CheckIcon, SparkIcon } from './icons';
 
-const QUESTION_COUNT = 5;
-
 export function QuizView() {
-  const [seed, setSeed] = useState(2026);
-  const questions = useMemo(() => buildQuiz(MOLECULES, seed, QUESTION_COUNT), [seed]);
-  const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [results, setResults] = useState<boolean[]>([]);
-  const [finished, setFinished] = useState(false);
-  const current = questions[index];
+  const seed = useQuizStore((state) => state.seed);
+  const length = useQuizStore((state) => state.length);
+  const index = useQuizStore((state) => state.index);
+  const selected = useQuizStore((state) => state.selectedId);
+  const results = useQuizStore((state) => state.results);
+  const finished = useQuizStore((state) => state.finished);
+  const best = useQuizStore((state) => state.best);
+  const attempts = useQuizStore((state) => state.attempts);
+  const chooseOption = useQuizStore((state) => state.choose);
+  const nextQuestion = useQuizStore((state) => state.next);
+  const restartQuiz = useQuizStore((state) => state.restart);
+  const mergeParams = useAppStore((state) => state.mergeParams);
+  const safeMode = useAppStore((state) => state.params.safe) === '1';
+
+  useEffect(() => {
+    mergeParams({ seed: String(seed), length: String(length) });
+  }, [seed, length, mergeParams]);
+  const questions = useMemo(
+    () => buildQuiz(MOLECULES, seed, length, { distractorOrder: 'similar' }),
+    [seed, length],
+  );
+  const current = questions[Math.min(index, questions.length - 1)];
   const molecule = getMolecule(current.moleculeId);
-  const score = results.filter(Boolean).length;
+  const score = quizScore(results);
   const isCorrect = selected === current.answerId;
   const structureDescription = `원자 ${molecule.atoms
     .map((atom) => atom.element)
     .join(', ')}로 이루어진 ${molecule.shapeKo} 구조, 결합 ${molecule.bonds.length}개`;
 
   const choose = (optionId: string) => {
-    if (selected) return;
-    setSelected(optionId);
-    setResults((previous) => [...previous, optionId === current.answerId]);
+    chooseOption(optionId, current.answerId, current.moleculeId);
   };
 
   const next = () => {
-    if (!selected) return;
-    if (index >= questions.length - 1) {
-      setFinished(true);
-      return;
-    }
-    setIndex((value) => value + 1);
-    setSelected(null);
+    nextQuestion(questions.length - 1);
   };
 
   const restart = () => {
-    setSeed(Date.now() % 100000);
-    setIndex(0);
-    setSelected(null);
-    setResults([]);
-    setFinished(false);
+    restartQuiz();
   };
 
   if (finished) {
@@ -75,6 +79,9 @@ export function QuizView() {
               <span key={resultIndex} className={result ? 'is-correct' : 'is-wrong'} />
             ))}
           </div>
+          <p className="result-record" data-testid="quiz-best">
+            최고 {best === null ? '—' : `${best}점`} · {attempts}회 도전
+          </p>
           <div className="result-actions">
             <button type="button" className="btn btn-primary btn-pulse" onClick={restart}>
               다시 풀기
@@ -101,6 +108,9 @@ export function QuizView() {
             문제 {index + 1} / {questions.length}
           </span>
           <strong data-testid="quiz-score">{score}점</strong>
+          <span data-testid="quiz-best">
+            최고 {best === null ? '—' : `${best}점`} · {attempts}회 도전
+          </span>
         </div>
       </div>
 
@@ -116,12 +126,18 @@ export function QuizView() {
             </span>
           </div>
           <div className="stage-canvas quiz-canvas">
-            <PreviewScene
-              molecule={molecule}
-              autoRotate
-              showLabels
-              ariaLabel={structureDescription}
-            />
+            <WebGLGate
+              label={structureDescription}
+              summary={structureDescription}
+              forceFallback={safeMode}
+            >
+              <PreviewScene
+                molecule={molecule}
+                autoRotate
+                showLabels
+                ariaLabel={structureDescription}
+              />
+            </WebGLGate>
             <div className="quiz-stage-note" aria-hidden="true">
               원자의 종류와 결합 방향을 살펴보세요
             </div>

@@ -1,7 +1,9 @@
-import { ContactShadows, OrbitControls } from '@react-three/drei';
+import { ContactShadows, Line, OrbitControls } from '@react-three/drei';
 import { Canvas, type ThreeEvent, useThree } from '@react-three/fiber';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { findSnapHost } from '../chem/bondRules';
+import { targetRelativePosition } from '../chem/targetGeometry';
 import type { Atom, Vec3 } from '../chem/types';
 import { useBuildStore } from '../stores/buildStore';
 import { MoleculeModel } from './MoleculeModel';
@@ -48,9 +50,14 @@ function BuildSceneContents() {
   const atoms = useBuildStore((state) => state.atoms);
   const bonds = useBuildStore((state) => state.bonds);
   const selectedAtomId = useBuildStore((state) => state.selectedAtomId);
+  const measureTargetId = useBuildStore((state) => state.measureTargetId);
   const showAngles = useBuildStore((state) => state.showAngles);
   const showPolarity = useBuildStore((state) => state.showPolarity);
+  const showLonePairs = useBuildStore((state) => state.showLonePairs);
+  const dragMode = useBuildStore((state) => state.dragMode);
+  const targetId = useBuildStore((state) => state.targetId);
   const dragging = useBuildStore((state) => state.dragging);
+  const [preview, setPreview] = useState<{ position: Vec3; hostId: string } | null>(null);
   const selectAtom = useBuildStore((state) => state.selectAtom);
   const moveAtom = useBuildStore((state) => state.moveAtom);
   const snapDraggedAtom = useBuildStore((state) => state.snapDraggedAtom);
@@ -71,6 +78,7 @@ function BuildSceneContents() {
   const handleAtomPointerDown = useCallback(
     (atom: Atom, event: ThreeEvent<PointerEvent>) => {
       selectAtom(atom.id);
+      if (dragMode === 'rotate') return;
       const degree = bonds.filter((bond) => bond.a === atom.id || bond.b === atom.id).length;
       if (degree > 0) return;
       event.stopPropagation();
@@ -105,6 +113,21 @@ function BuildSceneContents() {
         if (!raycaster.ray.intersectPlane(drag.plane, intersection)) return;
         intersection.add(drag.offset);
         const position: Vec3 = [intersection.x, intersection.y, intersection.z];
+        const store = useBuildStore.getState();
+        const dragged = store.atoms.find((candidate) => candidate.id === drag.id);
+        if (dragged) {
+          const staged = { ...dragged, position };
+          const snap = findSnapHost(staged, store.atoms, store.bonds);
+          if (snap) {
+            const targetGeometry = targetRelativePosition(store.targetId, staged, snap.host);
+            setPreview({
+              position: targetGeometry?.position ?? snap.position,
+              hostId: snap.host.id,
+            });
+          } else {
+            setPreview(null);
+          }
+        }
         moveAtom(drag.id, position);
       };
 
@@ -113,6 +136,7 @@ function BuildSceneContents() {
         cleanupRef.current = null;
         const drag = dragRef.current;
         dragRef.current = null;
+        setPreview(null);
         gl.domElement.style.cursor = '';
         if (!drag) {
           setDragging(false);
@@ -131,7 +155,20 @@ function BuildSceneContents() {
         window.removeEventListener('pointercancel', handleUp);
       };
     },
-    [bonds, camera, gl, moveAtom, pointer, raycaster, selectAtom, setDragging, snapDraggedAtom],
+    [
+      atoms,
+      bonds,
+      camera,
+      dragMode,
+      gl,
+      moveAtom,
+      pointer,
+      raycaster,
+      selectAtom,
+      setDragging,
+      snapDraggedAtom,
+      targetId,
+    ],
   );
 
   return (
@@ -140,11 +177,39 @@ function BuildSceneContents() {
         atoms={atoms}
         bonds={bonds}
         selectedAtomId={selectedAtomId}
+        measureFromId={selectedAtomId}
+        measureToId={measureTargetId}
         showAngles={showAngles}
         showPolarity={showPolarity}
+        showLonePairs={showLonePairs}
         interactive
+        allowDrag={dragMode === 'move'}
         onAtomPointerDown={handleAtomPointerDown}
       />
+      {preview
+        ? (() => {
+            const host = atoms.find((atom) => atom.id === preview.hostId);
+            if (!host) return null;
+            return (
+              <group>
+                <mesh position={preview.position}>
+                  <sphereGeometry args={[0.22, 20, 14]} />
+                  <meshBasicMaterial color="#e0b866" transparent opacity={0.42} depthWrite={false} />
+                </mesh>
+                <Line
+                  points={[host.position, preview.position]}
+                  color="#e0b866"
+                  lineWidth={2}
+                  dashed
+                  dashSize={0.14}
+                  gapSize={0.1}
+                  transparent
+                  opacity={0.8}
+                />
+              </group>
+            );
+          })()
+        : null}
       <OrbitControls
         makeDefault
         enablePan={false}

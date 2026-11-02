@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  bondOrderSignature,
+  canSetBondOrder,
   computeBondAngles,
   computePolarity,
   displayFormula,
   evaluateTarget,
+  evaluateTargetGeometry,
   formulaForAtoms,
+  lonePairCount,
+  moleculeBondOrderSignature,
   moleculeFormula,
+  valenceUsage,
 } from '../../chem/analysis';
 import { connectionDirection, findSnapHost, SINGLE_BOND_LENGTH } from '../../chem/bondRules';
 import { getMolecule, MOLECULES } from '../../chem/molecules';
@@ -148,6 +154,81 @@ describe('target formula checking', () => {
     ];
     const verdict = evaluateTarget(atoms, bonds, target);
     expect(verdict.status).toBe('wrong-arrangement');
+  });
+});
+
+describe('target geometry checking', () => {
+  it('rejects a bent free-built CO2 molecule as wrong geometry', () => {
+    const atoms = [
+      atom('c', 'C', [0, 0, 0]),
+      atom('o1', 'O', [1.2, 0.8, 0]),
+      atom('o2', 'O', [-1.2, 0.8, 0]),
+    ];
+    const bonds: Bond[] = [
+      { id: 'b1', a: 'c', b: 'o1', order: 1 },
+      { id: 'b2', a: 'c', b: 'o2', order: 1 },
+    ];
+    expect(evaluateTarget(atoms, bonds, getMolecule('co2')).status).toBe('wrong-geometry');
+  });
+
+  it('requires target bond orders for completion', () => {
+    const target = getMolecule('co2');
+    const atoms = [
+      atom('c', 'C', [0, 0, 0]),
+      atom('o1', 'O', [1.35, 0, 0]),
+      atom('o2', 'O', [-1.35, 0, 0]),
+    ];
+    const singleBonds: Bond[] = [
+      { id: 'b1', a: 'c', b: 'o1', order: 1 },
+      { id: 'b2', a: 'c', b: 'o2', order: 1 },
+    ];
+    expect(evaluateTarget(atoms, singleBonds, target).complete).toBe(false);
+    const doubleBonds: Bond[] = [
+      { id: 'b1', a: 'c', b: 'o1', order: 2 },
+      { id: 'b2', a: 'c', b: 'o2', order: 2 },
+    ];
+    expect(bondOrderSignature(atoms, doubleBonds)).toEqual(moleculeBondOrderSignature(target));
+    expect(evaluateTarget(atoms, doubleBonds, target).complete).toBe(true);
+  });
+
+  it('matches geometry for an ideal guided molecule', () => {
+    const target = getMolecule('h2o');
+    const atoms = [
+      atom('o', 'O', [0, 0, 0]),
+      atom('h1', 'H', [1.18604, 0.91834, 0]),
+      atom('h2', 'H', [-1.18604, 0.91834, 0]),
+    ];
+    const bonds: Bond[] = [
+      { id: 'b1', a: 'o', b: 'h1', order: 1 },
+      { id: 'b2', a: 'o', b: 'h2', order: 1 },
+    ];
+    const geometry = evaluateTargetGeometry(atoms, bonds, target);
+    expect(geometry.status).toBe('match');
+    expect(geometry.maxDeviationDeg).toBeLessThanOrEqual(4);
+  });
+});
+
+describe('valence and lone pairs', () => {
+  it('tracks bond-order-weighted valence use', () => {
+    const atoms = [
+      atom('c', 'C', [0, 0, 0]),
+      atom('o1', 'O', [1.35, 0, 0]),
+      atom('o2', 'O', [-1.35, 0, 0]),
+    ];
+    const bonds: Bond[] = [
+      { id: 'b1', a: 'c', b: 'o1', order: 2 },
+      { id: 'b2', a: 'c', b: 'o2', order: 2 },
+    ];
+    const usage = valenceUsage(atoms, bonds);
+    expect(usage.c).toBe(4);
+    expect(usage.o1).toBe(2);
+    expect(canSetBondOrder(atoms, bonds, 'b1', 3).ok).toBe(false);
+  });
+
+  it('counts lone pairs for classroom atoms', () => {
+    expect(lonePairCount('O', 2)).toBe(2);
+    expect(lonePairCount('N', 3)).toBe(1);
+    expect(lonePairCount('H', 1)).toBe(0);
   });
 });
 

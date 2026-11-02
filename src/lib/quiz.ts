@@ -11,15 +11,40 @@ export interface QuizQuestion {
   options: QuizOption[];
 }
 
-export function buildQuiz(molecules: MoleculeData[], seed = 2026, length = 5): QuizQuestion[] {
+export function similarityScore(first: MoleculeData, second: MoleculeData): number {
+  let score = 0;
+  if (first.shapeKo === second.shapeKo) score += 3;
+  if (first.polarityKo === second.polarityKo) score += 2;
+  if (first.category === second.category) score += 1;
+  if (first.atoms.length === second.atoms.length) score += 1;
+  if (first.bonds.length === second.bonds.length) score += 1;
+  return score;
+}
+
+export function buildQuiz(
+  molecules: MoleculeData[],
+  seed = 2026,
+  length = 5,
+  options: { distractorOrder?: 'similar' | 'random' } = {},
+): QuizQuestion[] {
   const random = mulberry32(seed);
   const pool = shuffle([...molecules], random);
   const selected = pool.slice(0, Math.min(length, pool.length));
+  const distractorOrder = options.distractorOrder ?? 'similar';
   return selected.map((molecule) => {
-    const distractors = shuffle(
-      molecules.filter((candidate) => candidate.id !== molecule.id),
-      random,
-    ).slice(0, 3);
+    const candidates = molecules.filter((candidate) => candidate.id !== molecule.id);
+    const ranked =
+      distractorOrder === 'similar'
+        ? [...candidates]
+            .map((candidate, index) => ({
+              candidate,
+              score: similarityScore(molecule, candidate),
+              tiebreak: mulberry32(seed * 31 + index * 101 + molecule.id.length)(),
+            }))
+            .sort((first, second) => second.score - first.score || first.tiebreak - second.tiebreak)
+            .map((entry) => entry.candidate)
+        : shuffle(candidates, random);
+    const distractors = ranked.slice(0, 3);
     const options = shuffle(
       [molecule, ...distractors].map((candidate) => ({
         id: candidate.id,

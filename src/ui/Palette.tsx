@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react';
+import { useRef } from 'react';
 import { PALETTE_ELEMENTS, getElement } from '../chem/elements';
 import { getMolecule } from '../chem/molecules';
+import { encodeWorkbenchToHash } from '../lib/share';
 import { useBuildStore } from '../stores/buildStore';
 
 export function Palette() {
@@ -11,7 +13,43 @@ export function Palette() {
   const selectAtom = useBuildStore((state) => state.selectAtom);
   const clear = useBuildStore((state) => state.clear);
   const loadMolecule = useBuildStore((state) => state.loadMolecule);
+  const exportWorkbench = useBuildStore((state) => state.exportWorkbench);
+  const importWorkbench = useBuildStore((state) => state.importWorkbench);
+  const setNotice = useBuildStore((state) => state.setNotice);
+  const fileInput = useRef<HTMLInputElement>(null);
   const target = getMolecule(targetId);
+
+  const saveJson = () => {
+    const blob = new Blob([JSON.stringify(exportWorkbench(), null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `molecule-lab-${target.id}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setNotice('작업대를 JSON 파일로 저장했습니다.');
+  };
+
+  const copyShareLink = async () => {
+    const hash = encodeWorkbenchToHash(exportWorkbench());
+    const url = `${window.location.origin}${window.location.pathname}#/build?data=${hash}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setNotice('공유 링크를 복사했습니다.');
+    } catch {
+      setNotice('공유 링크를 복사하지 못했습니다. JSON 저장을 이용하세요.');
+    }
+  };
+
+  const importJsonFile = (file: File | undefined) => {
+    if (!file) return;
+    void file
+      .text()
+      .then((text) => importWorkbench(JSON.parse(text) as unknown))
+      .catch(() => setNotice('JSON 파일을 읽지 못했습니다.'));
+  };
   const ordinals = new Map<string, number>();
   const counters = new Map<string, number>();
 
@@ -108,6 +146,30 @@ export function Palette() {
         <button type="button" className="btn btn-ghost btn-block" onClick={clear}>
           실험대 비우기
         </button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={saveJson}>
+          작업 JSON 저장
+        </button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={copyShareLink}>
+          공유 링크 복사
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary btn-block"
+          onClick={() => fileInput.current?.click()}
+        >
+          작업 JSON 불러오기
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          className="sr-only"
+          aria-label="작업 JSON 파일 선택"
+          onChange={(event) => {
+            importJsonFile(event.target.files?.[0]);
+            event.target.value = '';
+          }}
+        />
       </div>
 
       <p className="palette-footnote">

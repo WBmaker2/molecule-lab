@@ -4,7 +4,12 @@ import { actorOpacity, clamp01, sampleKeyframes, smoothstep } from '../../lib/ti
 
 describe('reaction timelines', () => {
   it('contains the two required reaction scenes', () => {
-    expect(REACTIONS.map((reaction) => reaction.id)).toEqual(['neutralization', 'precipitation']);
+    expect(REACTIONS.map((reaction) => reaction.id)).toEqual([
+      'neutralization',
+      'precipitation',
+      'barium-sulfate',
+      'lead-iodide',
+    ]);
     for (const reaction of REACTIONS) {
       expect(reaction.equation.length).toBeGreaterThan(5);
       expect(reaction.steps.length).toBeGreaterThanOrEqual(3);
@@ -14,6 +19,13 @@ describe('reaction timelines', () => {
       expect(times[0]).toBe(0);
       expect(times[times.length - 1]).toBeLessThan(1);
       expect(reaction.duration).toBeGreaterThan(0);
+    }
+  });
+
+  it('provides a net ionic equation for every scene', () => {
+    for (const reaction of REACTIONS) {
+      expect(reaction.netIonicEquation).toContain('→');
+      expect(reaction.netIonicEquation.length).toBeGreaterThan(5);
     }
   });
 

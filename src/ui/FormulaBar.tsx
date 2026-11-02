@@ -65,8 +65,15 @@ export function FormulaBar() {
 function ContextLine({ view }: { view: ViewId }) {
   if (view === 'states') return <StatesContext slot="line" />;
   if (view === 'reactions') return <ReactionContext slot="line" />;
+  if (view === 'worksheet') {
+    return <span className="formula-context">학습지를 인쇄해 수업에서 사용하세요.</span>;
+  }
   if (view === 'library') {
-    return <span className="formula-context">12종의 분자 표본을 살펴보고 조립할 수 있습니다.</span>;
+    return (
+      <span className="formula-context">
+        분자 12종·이온 11종의 표본을 살펴보고 조립할 수 있습니다.
+      </span>
+    );
   }
   return <span className="formula-context">분자 구조를 보고 이름을 맞혀 보세요.</span>;
 }
@@ -74,11 +81,19 @@ function ContextLine({ view }: { view: ViewId }) {
 function ContextMeta({ view }: { view: ViewId }) {
   if (view === 'states') return <StatesContext slot="meta" />;
   if (view === 'reactions') return <ReactionContext slot="meta" />;
+  if (view === 'worksheet') {
+    return (
+      <>
+        <span>인쇄용</span>
+        <span>학습지</span>
+      </>
+    );
+  }
   if (view === 'library') {
     return (
       <>
-        <span>표본 12종</span>
-        <span>4개 범주</span>
+        <span>분자 12종·이온 11종</span>
+        <span>도감</span>
       </>
     );
   }

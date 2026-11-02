@@ -174,6 +174,30 @@
   opacity: 0.85;
 }
 
+.webgl-fallback {
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  justify-items: center;
+  min-height: 320px;
+  padding: 28px;
+  color: var(--case-text);
+  text-align: center;
+}
+
+.webgl-fallback strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.webgl-fallback p {
+  max-width: 52ch;
+  color: var(--case-mute);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
 .stage-notice {
   position: relative;
   z-index: 4;

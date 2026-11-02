@@ -6,7 +6,13 @@ import {
   particlesAreFinite,
   stepParticles,
 } from '../../sim/particles';
-import { phaseForTemperature, particleColor, volumeForTemperature } from '../../sim/temperature';
+import {
+  densityNoteKo,
+  phaseForTemperature,
+  particleColor,
+  volumeForTemperature,
+  waterDensityKgPerL,
+} from '../../sim/temperature';
 
 const BOUNDS: Vec3 = [2.8, 1.65, 1.65];
 
@@ -36,12 +42,19 @@ describe('particle state simulation', () => {
     expect(particlesAreFinite(state)).toBe(true);
   });
 
-  it('expands the available volume as temperature rises', () => {
+  it('makes ice larger than liquid water near freezing', () => {
     const cold = volumeForTemperature(-10);
     const warm = volumeForTemperature(24);
     const hot = volumeForTemperature(112);
-    expect(cold).toBeLessThan(warm);
+    expect(cold).toBeGreaterThan(volumeForTemperature(0));
     expect(warm).toBeLessThan(hot);
+    expect(cold).toBeLessThan(hot);
+  });
+
+  it('reports maximum water density near 4 degrees', () => {
+    expect(waterDensityKgPerL(4)).toBeCloseTo(1, 3);
+    expect(waterDensityKgPerL(0)).toBeLessThan(waterDensityKgPerL(4));
+    expect(densityNoteKo(-10)).toContain('뜹니다');
   });
 
   it('steps 1500 particles without dropping below the interactive budget', () => {

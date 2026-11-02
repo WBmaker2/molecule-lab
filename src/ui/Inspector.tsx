@@ -1,7 +1,15 @@
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
-import { analyzeMolecule, componentFor, displayFormula, evaluateTarget } from '../chem/analysis';
-import { connectionDirection } from '../chem/bondRules';
+import {
+  analyzeMolecule,
+  componentFor,
+  displayFormula,
+  evaluateTarget,
+  evaluateTargetGeometry,
+  lonePairCount,
+  valenceUsage,
+} from '../chem/analysis';
+import { connectionDirection, distance } from '../chem/bondRules';
 import { getElement } from '../chem/elements';
 import { getMolecule } from '../chem/molecules';
 import type { ElementSymbol } from '../chem/types';
@@ -18,11 +26,19 @@ export function Inspector() {
   const selectAtom = useBuildStore((state) => state.selectAtom);
   const removeAtom = useBuildStore((state) => state.removeAtom);
   const removeBond = useBuildStore((state) => state.removeBond);
+  const cycleBondOrder = useBuildStore((state) => state.cycleBondOrder);
   const bondSelectedTo = useBuildStore((state) => state.bondSelectedTo);
+  const measureTargetId = useBuildStore((state) => state.measureTargetId);
+  const setMeasureTarget = useBuildStore((state) => state.setMeasureTarget);
   const autoBondSelected = useBuildStore((state) => state.autoBondSelected);
   const target = getMolecule(targetId);
   const analysis = useMemo(() => analyzeMolecule(atoms, bonds), [atoms, bonds]);
   const verdict = useMemo(() => evaluateTarget(atoms, bonds, target), [atoms, bonds, target]);
+  const geometry = useMemo(
+    () => evaluateTargetGeometry(atoms, bonds, target),
+    [atoms, bonds, target],
+  );
+  const usage = useMemo(() => valenceUsage(atoms, bonds), [atoms, bonds]);
   const selected = atoms.find((atom) => atom.id === selectedAtomId) ?? null;
   const selectedComponent = useMemo(
     () => componentFor(selectedAtomId, atoms, bonds),
@@ -36,6 +52,19 @@ export function Inspector() {
     () =>
       selected ? bonds.filter((bond) => bond.a === selected.id || bond.b === selected.id) : [],
     [bonds, selected],
+  );
+  const selectedLonePairs = useMemo(() => {
+    if (!selected || selectedBonds.length === 0) return null;
+    if (selectedBonds.some((bond) => bond.ionic)) return null;
+    return lonePairCount(selected.element, usage[selected.id] ?? 0);
+  }, [selected, selectedBonds, usage]);
+  const measureTarget = useMemo(
+    () => atoms.find((atom) => atom.id === measureTargetId) ?? null,
+    [atoms, measureTargetId],
+  );
+  const measureDistance = useMemo(
+    () => (selected && measureTarget ? distance(selected.position, measureTarget.position) : null),
+    [selected, measureTarget],
   );
   const labels = useMemo(() => {
     const counters = new Map<ElementSymbol, number>();
@@ -128,6 +157,14 @@ export function Inspector() {
           })}
         </div>
         <p className="verdict-hint">{verdict.hintKo}</p>
+        {verdict.status === 'wrong-geometry' ? (
+          <p className="verdict-hint">
+            구조 점수: {geometry.messageKo}
+            {geometry.status === 'mismatch'
+              ? ` 최대 어긋남 ${geometry.maxDeviationDeg.toFixed(1)}°`
+              : ''}
+          </p>
+        ) : null}
       </div>
 
       {selected ? (
@@ -169,6 +206,14 @@ export function Inspector() {
             <div>
               <dt>결합 수</dt>
               <dd>{selectedBonds.length}</dd>
+            </div>
+            <div>
+              <dt>사용한 원자가</dt>
+              <dd>{usage[selected.id] ?? 0}</dd>
+            </div>
+            <div>
+              <dt>비공유 전자쌍</dt>
+              <dd>{selectedLonePairs === null ? '—' : selectedLonePairs}</dd>
             </div>
             <div>
               <dt>선택 조각</dt>
@@ -217,14 +262,26 @@ export function Inspector() {
                         {selected.element}–{other?.element ?? '?'}
                         <small>{bond.ionic ? '이온' : `${bond.order}중 결합`}</small>
                       </span>
-                      <button
-                        type="button"
-                        className="link-button link-danger"
-                        onClick={() => removeBond(bond.id)}
-                        aria-label={`${selected.element}와 ${other?.element ?? '?'}의 결합 끊기`}
-                      >
-                        끊기
-                      </button>
+                      <span className="bond-actions">
+                        {!bond.ionic ? (
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => cycleBondOrder(bond.id)}
+                            aria-label={`${selected.element}와 ${other?.element ?? '?'}의 결합 차수 바꾸기`}
+                          >
+                            차수 변경
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="link-button link-danger"
+                          onClick={() => removeBond(bond.id)}
+                          aria-label={`${selected.element}와 ${other?.element ?? '?'}의 결합 끊기`}
+                        >
+                          끊기
+                        </button>
+                      </span>
                     </li>
                   );
                 })}
@@ -232,6 +289,36 @@ export function Inspector() {
             ) : (
               <p className="empty-copy">아직 결합이 없습니다.</p>
             )}
+          </section>
+
+          <section className="inspector-section" aria-labelledby="measure-title">
+            <div className="section-heading">
+              <h4 id="measure-title">거리 측정</h4>
+              <span>3D 점선 표시</span>
+            </div>
+            <div className="helper-list">
+              <label className="sr-only" htmlFor="measure-target-select">
+                거리를 잴 원자
+              </label>
+              <select
+                id="measure-target-select"
+                data-testid="measure-select"
+                value={measureTargetId ?? ''}
+                onChange={(event) => setMeasureTarget(event.target.value || null)}
+              >
+                <option value="">원자 선택</option>
+                {atoms
+                  .filter((atom) => selected && atom.id !== selected.id)
+                  .map((atom) => (
+                    <option key={atom.id} value={atom.id}>
+                      {labels.get(atom.id)}
+                    </option>
+                  ))}
+              </select>
+              <span data-testid="measure-result" aria-live="polite">
+                {measureDistance === null ? '—' : `${measureDistance.toFixed(2)}`}
+              </span>
+            </div>
           </section>
 
           <section className="inspector-section helper-section" aria-labelledby="helper-title">

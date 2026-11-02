@@ -52,6 +52,60 @@ export function dot(a: Vec3, b: Vec3): number {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
+export function cross(a: Vec3, b: Vec3): Vec3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+export function lonePairDirections(neighborDirections: Vec3[], count: number): Vec3[] {
+  if (count <= 0) return [];
+  const total: Vec3 = [0, 0, 0];
+  for (const direction of neighborDirections) {
+    const unit = normalize(direction);
+    total[0] += unit[0];
+    total[1] += unit[1];
+    total[2] += unit[2];
+  }
+  let axis = normalize([-total[0], -total[1], -total[2]]);
+  if (lengthOf(axis) === 0) axis = [0, -1, 0];
+  if (count === 1) return [axis];
+  const helper: Vec3 = Math.abs(axis[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+  const first = normalize(cross(axis, helper));
+  const second = normalize(cross(axis, first));
+  if (count === 2) {
+    const spread = (35 * Math.PI) / 180;
+    return [
+      normalize([
+        axis[0] * Math.cos(spread) + first[0] * Math.sin(spread),
+        axis[1] * Math.cos(spread) + first[1] * Math.sin(spread),
+        axis[2] * Math.cos(spread) + first[2] * Math.sin(spread),
+      ]),
+      normalize([
+        axis[0] * Math.cos(spread) - first[0] * Math.sin(spread),
+        axis[1] * Math.cos(spread) - first[1] * Math.sin(spread),
+        axis[2] * Math.cos(spread) - first[2] * Math.sin(spread),
+      ]),
+    ];
+  }
+  const cone = (50 * Math.PI) / 180;
+  return [0, 1, 2].slice(0, Math.min(count, 3)).map((slot) => {
+    const azimuth = (slot / 3) * Math.PI * 2;
+    const radial: Vec3 = [
+      first[0] * Math.cos(azimuth) + second[0] * Math.sin(azimuth),
+      first[1] * Math.cos(azimuth) + second[1] * Math.sin(azimuth),
+      first[2] * Math.cos(azimuth) + second[2] * Math.sin(azimuth),
+    ];
+    return normalize([
+      axis[0] * Math.cos(cone) + radial[0] * Math.sin(cone),
+      axis[1] * Math.cos(cone) + radial[1] * Math.sin(cone),
+      axis[2] * Math.cos(cone) + radial[2] * Math.sin(cone),
+    ]);
+  });
+}
+
 export function lengthOf(a: Vec3): number {
   return Math.hypot(a[0], a[1], a[2]);
 }

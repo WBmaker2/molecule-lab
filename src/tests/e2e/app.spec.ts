@@ -27,6 +27,31 @@ test.describe('Molecule Lab', () => {
     expect(pageErrors).toEqual([]);
   });
 
+  test('undoes and redoes workbench edits with buttons and keyboard', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '분자를 직접 조립하세요' })).toBeVisible();
+    await page.getByRole('button', { name: '실험대 비우기' }).click();
+    await page.getByRole('button', { name: '수소 원자 추가' }).click();
+    await expect(page.locator('.stage-count')).toContainText('원자 1');
+    await page.getByRole('button', { name: '실행 취소' }).click();
+    await expect(page.locator('.stage-count')).toContainText('원자 0');
+    await page.keyboard.press('Control+Shift+Z');
+    await expect(page.locator('.stage-count')).toContainText('원자 1');
+  });
+
+  test('switches drag mode and measures atom distance', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '분자를 직접 조립하세요' })).toBeVisible();
+    await page.getByRole('button', { name: '회전', exact: true }).click();
+    await expect(page.getByRole('button', { name: '회전', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.getByRole('button', { name: '이동', exact: true }).click();
+    await page.getByTestId('measure-select').selectOption({ index: 1 });
+    await expect(page.getByTestId('measure-result')).toContainText(/\d+\.\d+/);
+  });
+
   test('runs the 1,500-particle states simulation across all phases', async ({ page }) => {
     const pageErrors: string[] = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -125,9 +150,70 @@ test.describe('Molecule Lab', () => {
 
     await expect(page.getByText('퀴즈 완료')).toBeVisible();
     await expect(page.getByRole('button', { name: '다시 풀기' })).toBeVisible();
+    await expect(page.getByTestId('quiz-best')).toContainText('최고');
     await expect(page.locator('body')).not.toContainText(/\bNaN\b/);
   });
 });
+
+  test('loads teacher preset deep links', async ({ page }) => {
+    await page.goto('/#/build?target=co2&mode=target');
+    await expect(page.getByRole('heading', { name: '분자를 직접 조립하세요' })).toBeVisible();
+    await expect(page.getByTestId('formula-verdict')).toContainText('결합이 2개 더 필요해요');
+
+    await page.goto('/#/states?temp=112&count=1500');
+    await expect(page.locator('.state-summary')).toContainText('기체');
+    await expect(page.locator('.state-summary')).toContainText('1,500');
+
+    await page.goto('/#/reactions/precipitation?t=1');
+    await expect(page.getByTestId('reaction-complete')).toBeVisible();
+    await expect(page.getByTestId('reaction-progress')).toHaveAttribute('data-progress', '1.000');
+
+    await page.goto('/#/quiz?seed=7');
+    await expect(page.getByTestId('quiz-index')).toContainText('문제 1');
+    await expect(page).toHaveURL(/seed=7/);
+
+    await page.goto('/#/worksheet?molecule=h2o');
+    await expect(page.getByRole('heading', { name: /관찰 기록지/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: '인쇄하기' })).toBeVisible();
+
+    await page.goto('/#/library?collection=ions');
+    await expect(page.locator('.specimen-card')).toHaveCount(11);
+  });
+
+  test('completes the new precipitation scenes from the timeline', async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.goto('/#reactions');
+    await expect(
+      page.getByRole('heading', { name: '이온이 만나 새로운 물질이 됩니다' }),
+    ).toBeVisible();
+    for (const testId of ['reaction-barium-sulfate', 'reaction-lead-iodide']) {
+      await page.locator(`[data-testid="${testId}"]`).click();
+      const scrubber = page.locator('#reaction-progress-range');
+      await scrubber.focus();
+      await page.keyboard.press('End');
+      await expect(page.getByTestId('reaction-complete')).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator('body')).not.toContainText(/\bNaN\b/);
+    }
+    expect(pageErrors).toEqual([]);
+  });
+
+  test('renders a safe-mode fallback without WebGL', async ({ page }) => {
+    await page.goto('/#/states?safe=1');
+    await expect(page.getByTestId('webgl-fallback')).toBeVisible();
+    await expect(page.locator('.state-summary')).toContainText('24');
+  });
+
+  test('loads offline from the service worker cache', async ({ page, context }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: '분자를 직접 조립하세요' })).toBeVisible();
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '분자를 직접 조립하세요' })).toBeVisible({
+      timeout: 15_000,
+    });
+  });
 
 test('has no WCAG A/AA violations across the main views', async ({ page }) => {
   for (const route of ['', '/#states', '/#reactions', '/#library', '/#quiz']) {

@@ -3,16 +3,20 @@ import type { ThreeEvent } from '@react-three/fiber';
 import type { Atom, Bond } from '../chem/types';
 import { AtomView } from './AtomView';
 import { BondView } from './BondView';
-import { AngleOverlay, PolarityOverlay } from './Overlays';
+import { AngleOverlay, LonePairOverlay, MeasurementOverlay, PolarityOverlay } from './Overlays';
 
 interface MoleculeModelProps {
   atoms: Atom[];
   bonds: Bond[];
   selectedAtomId?: string | null;
+  measureFromId?: string | null;
+  measureToId?: string | null;
   showAngles?: boolean;
   showPolarity?: boolean;
+  showLonePairs?: boolean;
   showLabels?: boolean;
   interactive?: boolean;
+  allowDrag?: boolean;
   onAtomPointerDown?: (atom: Atom, event: ThreeEvent<PointerEvent>) => void;
 }
 
@@ -20,10 +24,14 @@ export function MoleculeModel({
   atoms,
   bonds,
   selectedAtomId = null,
+  measureFromId = null,
+  measureToId = null,
   showAngles = false,
   showPolarity = false,
+  showLonePairs = false,
   showLabels = true,
   interactive = false,
+  allowDrag = true,
   onAtomPointerDown,
 }: MoleculeModelProps) {
   const byId = useMemo(() => new Map(atoms.map((atom) => [atom.id, atom])), [atoms]);
@@ -51,7 +59,7 @@ export function MoleculeModel({
           atom={atom}
           selected={selectedAtomId === atom.id}
           interactive={interactive}
-          draggable={(degrees.get(atom.id) ?? 0) === 0}
+          draggable={allowDrag && (degrees.get(atom.id) ?? 0) === 0}
           showLabel={showLabels}
           onAtomPointerDown={onAtomPointerDown}
         />
@@ -63,6 +71,8 @@ export function MoleculeModel({
         visible={showAngles}
       />
       <PolarityOverlay atoms={atoms} bonds={bonds} visible={showPolarity} />
+      <LonePairOverlay atoms={atoms} bonds={bonds} visible={showLonePairs} />
+      <MeasurementOverlay atoms={atoms} fromId={measureFromId} toId={measureToId} />
     </group>
   );
 }

@@ -249,6 +249,12 @@
   height: 28px;
 }
 
+.result-record {
+  color: var(--ink-mute);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
 .result-kicker {
   color: var(--ink-mute);
   font-family: var(--font-mono);

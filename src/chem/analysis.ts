@@ -60,6 +60,7 @@ export type TargetStatus =
   | 'missing-bonds'
   | 'disconnected'
   | 'wrong-arrangement'
+  | 'wrong-geometry'
   | 'complete';
 
 export interface ElementProgress {
@@ -271,6 +272,203 @@ export function computePolarity(atoms: Atom[], bonds: Bond[]): PolarityResult {
   };
 }
 
+export interface GeometryVerdict {
+  status: 'match' | 'mismatch' | 'not-applicable';
+  maxDeviationDeg: number;
+  expected: number[];
+  actual: number[];
+  messageKo: string;
+}
+
+export function referenceAnglesByElementDegree(target: MoleculeData): Map<string, number[]> {
+  const atoms = target.atoms.map((atom, index) => ({
+    id: `target-${index}`,
+    element: atom.element,
+    position: atom.position,
+  }));
+  const bonds = target.bonds.map((bond, index) => ({
+    id: `target-b${index}`,
+    a: `target-${bond.a}`,
+    b: `target-${bond.b}`,
+    order: bond.order,
+  }));
+  const groups = new Map<string, number[]>();
+  const angles = computeBondAngles(atoms, bonds);
+  const neighborCount = new Map<string, number>();
+  for (const atom of atoms) neighborCount.set(atom.id, 0);
+  for (const bond of bonds) {
+    neighborCount.set(bond.a, (neighborCount.get(bond.a) ?? 0) + 1);
+    neighborCount.set(bond.b, (neighborCount.get(bond.b) ?? 0) + 1);
+  }
+  const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+  for (const angle of angles) {
+    const center = byId.get(angle.atomId);
+    if (!center) continue;
+    const key = `${center.element}:${neighborCount.get(center.id) ?? 0}`;
+    const group = groups.get(key) ?? [];
+    group.push(angle.angle);
+    groups.set(key, group);
+  }
+  for (const [key, values] of groups) {
+    values.sort((first, second) => first - second);
+    groups.set(key, values);
+  }
+  return groups;
+}
+
+export function evaluateTargetGeometry(
+  atoms: Atom[],
+  bonds: Bond[],
+  target: MoleculeData,
+  angleToleranceDeg = 4,
+): GeometryVerdict {
+  const reference = referenceAnglesByElementDegree(target);
+  if (reference.size === 0) {
+    return {
+      status: 'not-applicable',
+      maxDeviationDeg: 0,
+      expected: [],
+      actual: [],
+      messageKo: '이 목표는 확인할 결합각이 없습니다.',
+    };
+  }
+  const currentAngles = computeBondAngles(atoms, bonds);
+  const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+  const currentGroups = new Map<string, number[]>();
+  const neighborCount = new Map<string, number>();
+  for (const atom of atoms) neighborCount.set(atom.id, 0);
+  for (const bond of bonds) {
+    neighborCount.set(bond.a, (neighborCount.get(bond.a) ?? 0) + 1);
+    neighborCount.set(bond.b, (neighborCount.get(bond.b) ?? 0) + 1);
+  }
+  for (const angle of currentAngles) {
+    const center = byId.get(angle.atomId);
+    if (!center) continue;
+    const key = `${center.element}:${neighborCount.get(center.id) ?? 0}`;
+    const group = currentGroups.get(key) ?? [];
+    group.push(angle.angle);
+    currentGroups.set(key, group);
+  }
+  let maxDeviation = 0;
+  let expected: number[] = [];
+  let actual: number[] = [];
+  for (const [key, referenceValues] of reference) {
+    const currentValues = (currentGroups.get(key) ?? []).slice().sort((a, b) => a - b);
+    if (currentValues.length !== referenceValues.length) {
+      return {
+        status: 'mismatch',
+        maxDeviationDeg: 180,
+        expected: referenceValues,
+        actual: currentValues,
+        messageKo: '결합한 이웃 원자의 배치가 목표와 달라요.',
+      };
+    }
+    for (let index = 0; index < referenceValues.length; index += 1) {
+      const deviation = Math.abs(currentValues[index] - referenceValues[index]);
+      if (deviation > maxDeviation) {
+        maxDeviation = deviation;
+        expected = referenceValues;
+        actual = currentValues;
+      }
+      if (deviation > angleToleranceDeg) {
+        return {
+          status: 'mismatch',
+          maxDeviationDeg: Math.round(maxDeviation * 10) / 10,
+          expected,
+          actual,
+          messageKo: '결합각이 목표와 달라요.',
+        };
+      }
+    }
+  }
+  for (const [key, currentValues] of currentGroups) {
+    if (!reference.has(key)) {
+      return {
+        status: 'mismatch',
+        maxDeviationDeg: 180,
+        expected: [],
+        actual: currentValues,
+        messageKo: '목표에 없는 모양의 결합이 있어요.',
+      };
+    }
+  }
+  return {
+    status: 'match',
+    maxDeviationDeg: Math.round(maxDeviation * 10) / 10,
+    expected,
+    actual,
+    messageKo: '결합각이 목표와 일치합니다.',
+  };
+}
+
+export function bondOrderSignature(atoms: Atom[], bonds: Bond[]): string[] {
+  const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+  const counts = new Map<string, number>();
+  for (const bond of bonds) {
+    const first = byId.get(bond.a)?.element;
+    const second = byId.get(bond.b)?.element;
+    if (!first || !second) continue;
+    const key = `${[first, second].sort().join('–')}:${bond.order}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, count]) => `${key}:${count}`);
+}
+
+export function moleculeBondOrderSignature(molecule: MoleculeData): string[] {
+  const counts = new Map<string, number>();
+  for (const bond of molecule.bonds) {
+    const first = molecule.atoms[bond.a]?.element;
+    const second = molecule.atoms[bond.b]?.element;
+    if (!first || !second) continue;
+    const key = `${[first, second].sort().join('–')}:${bond.order}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([key, count]) => `${key}:${count}`);
+}
+
+export function valenceUsage(atoms: Atom[], bonds: Bond[]): Record<string, number> {
+  const usage: Record<string, number> = {};
+  for (const atom of atoms) usage[atom.id] = 0;
+  for (const bond of bonds) {
+    usage[bond.a] = (usage[bond.a] ?? 0) + bond.order;
+    usage[bond.b] = (usage[bond.b] ?? 0) + bond.order;
+  }
+  return usage;
+}
+
+export function canSetBondOrder(
+  atoms: Atom[],
+  bonds: Bond[],
+  bondId: string,
+  order: 1 | 2 | 3,
+): { ok: boolean; reasonKo?: string } {
+  const bond = bonds.find((candidate) => candidate.id === bondId);
+  if (!bond) return { ok: false, reasonKo: '결합을 찾을 수 없습니다.' };
+  if (bond.order === order) return { ok: true };
+  const byId = new Map(atoms.map((atom) => [atom.id, atom]));
+  for (const atomId of [bond.a, bond.b]) {
+    const atom = byId.get(atomId);
+    if (!atom) return { ok: false, reasonKo: '원자를 찾을 수 없습니다.' };
+    const used = bonds
+      .filter((candidate) => candidate.id !== bondId)
+      .filter((candidate) => candidate.a === atomId || candidate.b === atomId)
+      .reduce<number>((sum, candidate) => sum + candidate.order, order);
+    if (used > ELEMENTS[atom.element].valence) {
+      return {
+        ok: false,
+        reasonKo: `${ELEMENTS[atom.element].nameKo} 원자가는 최대 ${ELEMENTS[atom.element].valence}까지 만들 수 있어요.`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
+export function lonePairCount(element: ElementSymbol, usedBondOrderSum: number): number {
+  const remaining = ELEMENTS[element].valenceElectrons - usedBondOrderSum;
+  if (remaining < 0 || remaining % 2 !== 0) return 0;
+  return remaining / 2;
+}
+
 export function analyzeMolecule(atoms: Atom[], bonds: Bond[]): MoleculeAnalysis {
   const composition = compositionOf(atoms);
   const formula = formulaForComposition(composition);
@@ -399,6 +597,33 @@ export function evaluateTarget(atoms: Atom[], bonds: Bond[], target: MoleculeDat
       complete: false,
       messageKo: '원자 배열이 목표와 달라요',
       hintKo: '어떤 원자끼리 결합해야 하는지 다시 확인해 보세요.',
+      targetFormula,
+      targetDisplayFormula: targetDisplay,
+      currentDisplayFormula: currentDisplay,
+      progress,
+    };
+  }
+  const currentOrderSignature = bondOrderSignature(atoms, bonds);
+  const targetOrderSignature = moleculeBondOrderSignature(target);
+  if (currentOrderSignature.join('|') !== targetOrderSignature.join('|')) {
+    return {
+      status: 'wrong-geometry',
+      complete: false,
+      messageKo: '화학식은 맞지만 결합 차수가 목표와 달라요',
+      hintKo: '결합을 선택해 단일·이중·삼중 결합을 맞추어 보세요.',
+      targetFormula,
+      targetDisplayFormula: targetDisplay,
+      currentDisplayFormula: currentDisplay,
+      progress,
+    };
+  }
+  const geometry = evaluateTargetGeometry(atoms, bonds, target);
+  if (geometry.status === 'mismatch') {
+    return {
+      status: 'wrong-geometry',
+      complete: false,
+      messageKo: '화학식은 맞지만 모양이 목표와 달라요',
+      hintKo: '결합각과 결합 차수를 확인하세요.',
       targetFormula,
       targetDisplayFormula: targetDisplay,
       currentDisplayFormula: currentDisplay,

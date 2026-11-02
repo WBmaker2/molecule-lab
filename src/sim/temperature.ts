@@ -53,12 +53,33 @@ export function phaseInfoForTemperature(temperature: number): PhaseInfo {
   return PHASE_INFO[phaseForTemperature(temperature)];
 }
 
+export const WATER_MAX_DENSITY_TEMP_C = 4;
+export const ICE_DENSITY_KG_PER_L = 0.9167;
+export const LIQUID_DENSITY_CURVATURE = 0.0000042;
+
+export function waterDensityKgPerL(temperatureC: number): number {
+  if (temperatureC < MELTING_POINT) return ICE_DENSITY_KG_PER_L;
+  const offset = temperatureC - WATER_MAX_DENSITY_TEMP_C;
+  return 1 - LIQUID_DENSITY_CURVATURE * offset * offset;
+}
+
+export function waterRelativeVolume(temperatureC: number): number {
+  return 1 / waterDensityKgPerL(temperatureC);
+}
+
+export function densityNoteKo(temperatureC: number): string {
+  if (temperatureC < MELTING_POINT) return '얼음의 밀도는 물보다 작아 물에 뜹니다.';
+  if (temperatureC < WATER_MAX_DENSITY_TEMP_C) return '4°C에서 밀도가 가장 큽니다.';
+  if (temperatureC < BOILING_POINT) return '온도가 오르면 부피가 조금씩 커집니다.';
+  return '물이 수증기가 되어 크게 팽창합니다.';
+}
+
 export function volumeForTemperature(temperature: number): number {
-  if (temperature <= MELTING_POINT) {
-    return 0.82 + clamp((temperature + 20) / 20, 0, 1) * 0.04;
+  if (temperature < MELTING_POINT) {
+    return waterRelativeVolume(temperature);
   }
   if (temperature < BOILING_POINT) {
-    return 0.9 + (temperature / BOILING_POINT) * 0.18;
+    return waterRelativeVolume(temperature);
   }
   return 1.12 + clamp((temperature - BOILING_POINT) / 20, 0, 1) * 0.28;
 }

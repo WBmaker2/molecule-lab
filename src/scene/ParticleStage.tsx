@@ -16,6 +16,7 @@ interface ParticleStageProps {
   temperature: number;
   count: number;
   paused: boolean;
+  quality?: 'high' | 'low';
   onMetrics?: (metrics: { fps: number; order: number; speed: number }) => void;
 }
 
@@ -26,10 +27,16 @@ function boundsFor(temperature: number): Vec3 {
   return [BASE_BOUNDS[0] * scale, BASE_BOUNDS[1] * scale, BASE_BOUNDS[2] * scale];
 }
 
-export function ParticleStage({ temperature, count, paused, onMetrics }: ParticleStageProps) {
+export function ParticleStage({
+  temperature,
+  count,
+  paused,
+  quality = 'high',
+  onMetrics,
+}: ParticleStageProps) {
   return (
     <Canvas
-      dpr={[1, 1.75]}
+      dpr={quality === 'low' ? [1, 1] : [1, 1.75]}
       camera={{ position: [0, 1.6, 7.8], fov: 42 }}
       gl={{ antialias: true, alpha: true }}
       onCreated={({ gl }) => {
@@ -58,7 +65,7 @@ export function ParticleStage({ temperature, count, paused, onMetrics }: Particl
   );
 }
 
-function ParticleField({ temperature, count, paused, onMetrics }: ParticleStageProps) {
+function ParticleField({ temperature, count, paused, quality = 'high', onMetrics }: ParticleStageProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const stateRef = useRef<ParticleState>(
     createParticles(count, boundsFor(temperature), temperature),
@@ -89,7 +96,7 @@ function ParticleField({ temperature, count, paused, onMetrics }: ParticleStageP
     }
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     lastColorTemperature.current = temperature;
-  }, [color, count, temperature]);
+  }, [color, count, quality, temperature]);
 
   useFrame((_, rawDelta) => {
     const mesh = meshRef.current;
@@ -141,7 +148,7 @@ function ParticleField({ temperature, count, paused, onMetrics }: ParticleStageP
 
   return (
     <group>
-      <InstancedParticles meshRef={meshRef} count={count} />
+      <InstancedParticles meshRef={meshRef} count={count} detail={quality === 'low' ? 0 : 1} />
       <Chamber bounds={bounds} temperature={temperature} />
     </group>
   );
@@ -150,18 +157,19 @@ function ParticleField({ temperature, count, paused, onMetrics }: ParticleStageP
 interface InstancedParticlesProps {
   meshRef: React.RefObject<THREE.InstancedMesh | null>;
   count: number;
+  detail: 0 | 1;
 }
 
-function InstancedParticles({ meshRef, count }: InstancedParticlesProps) {
+function InstancedParticles({ meshRef, count, detail }: InstancedParticlesProps) {
   return (
     <instancedMesh
       ref={meshRef}
-      key={count}
+      key={`${count}-${detail}`}
       args={[undefined, undefined, count]}
       count={count}
       frustumCulled={false}
     >
-      <icosahedronGeometry args={[0.062, 1]} />
+      <icosahedronGeometry args={[0.062, detail]} />
       <meshStandardMaterial color="#ffffff" roughness={0.36} metalness={0.08} />
     </instancedMesh>
   );

@@ -4,6 +4,7 @@
     "titleKo": "중화 반응",
     "subtitleKo": "산과 염기가 만나 물과 염을 만듭니다",
     "equation": "HCl + NaOH → NaCl + H₂O",
+    "netIonicEquation": "H⁺ + OH⁻ → H₂O",
     "observationKo": "H⁺ + OH⁻ → H₂O. 산의 수소 이온과 염기의 수산화 이온이 물을 만들고, 남은 Na⁺와 Cl⁻가 염을 이룹니다.",
     "sceneKo": "수용액 속 이온의 만남",
     "duration": 9,
@@ -108,6 +109,7 @@
     "titleKo": "앙금 생성 반응",
     "subtitleKo": "두 수용액이 만나 물에 녹지 않는 앙금을 만듭니다",
     "equation": "AgNO₃ + NaCl → AgCl↓ + NaNO₃",
+    "netIonicEquation": "Ag⁺ + Cl⁻ → AgCl↓",
     "observationKo": "Ag⁺ + Cl⁻ → AgCl↓. 물에 녹지 않는 염화은이 흰색 앙금으로 가라앉습니다.",
     "sceneKo": "흰색 앙금이 가라앉는 장면",
     "duration": 10,
@@ -198,6 +200,227 @@
       {
         "label": "AgCl 앙금",
         "color": "#e9e1d2",
+        "keyframes": [
+          { "t": 0.72, "pos": [0, -1.55, 0] },
+          { "t": 1, "pos": [0, -1.55, 0] }
+        ],
+        "appear": [0.7, 0.82]
+      }
+    ]
+  },
+  {
+    "id": "barium-sulfate",
+    "titleKo": "황산바륨 앙금 반응",
+    "subtitleKo": "두 수용액이 만나 물에 녹지 않는 흰색 앙금을 만듭니다",
+    "equation": "BaCl₂ + Na₂SO₄ → BaSO₄↓ + 2NaCl",
+    "netIonicEquation": "Ba²⁺ + SO₄²⁻ → BaSO₄↓",
+    "observationKo": "Ba²⁺ + SO₄²⁻ → BaSO₄↓. 물에 녹지 않는 황산바륨이 흰색 앙금으로 가라앉습니다.",
+    "sceneKo": "흰색 앙금이 가라앉는 장면",
+    "duration": 10,
+    "accent": "#7d9490",
+    "steps": [
+      {
+        "at": 0,
+        "titleKo": "두 수용액의 이온",
+        "detailKo": "염화바륨 수용액의 Ba²⁺, Cl⁻와 황산나트륨 수용액의 Na⁺, SO₄²⁻가 물속에 섞여 있습니다."
+      },
+      {
+        "at": 0.25,
+        "titleKo": "Ba²⁺와 SO₄²⁻가 서로 끌립니다",
+        "detailKo": "바륨 이온과 황산 이온 사이의 강한 인력이 두 이온을 가까이 모읍니다."
+      },
+      {
+        "at": 0.52,
+        "titleKo": "물에 녹지 않는 BaSO₄가 생깁니다",
+        "detailKo": "Ba²⁺ + SO₄²⁻ → BaSO₄↓. 황산바륨은 물에 거의 녹지 않아 흰색 앙금으로 나타납니다."
+      },
+      {
+        "at": 0.75,
+        "titleKo": "앙금이 가라앉습니다",
+        "detailKo": "Na⁺와 Cl⁻는 용액 속에 남아 있고, BaSO₄ 앙금은 바닥에 쌓입니다."
+      }
+    ],
+    "actors": [
+      {
+        "id": "barium",
+        "label": "Ba²⁺",
+        "color": "#7fa3a3",
+        "radius": 0.37,
+        "keyframes": [
+          { "t": 0, "pos": [-2.05, 0.8, 0.3] },
+          { "t": 0.3, "pos": [-1.35, 0.5, 0.2] },
+          { "t": 0.52, "pos": [-0.25, 0.05, 0] },
+          { "t": 0.58, "pos": [0, 0, 0] }
+        ],
+        "fadeOut": [0.52, 0.6]
+      },
+      {
+        "id": "sulfate",
+        "label": "SO₄²⁻",
+        "color": "#8a8f5f",
+        "radius": 0.42,
+        "keyframes": [
+          { "t": 0, "pos": [2.05, 0.7, -0.3] },
+          { "t": 0.3, "pos": [1.35, 0.42, -0.2] },
+          { "t": 0.52, "pos": [0.3, 0.05, 0] },
+          { "t": 0.58, "pos": [0, 0, 0] }
+        ],
+        "fadeOut": [0.52, 0.6]
+      },
+      {
+        "id": "sodium",
+        "label": "Na⁺",
+        "color": "#b99ac8",
+        "radius": 0.33,
+        "keyframes": [
+          { "t": 0, "pos": [1.65, -0.6, -0.3] },
+          { "t": 0.4, "pos": [1.2, -0.15, -0.2] },
+          { "t": 0.8, "pos": [1.25, -0.38, -0.2] },
+          { "t": 1, "pos": [1.15, -0.45, -0.18] }
+        ]
+      },
+      {
+        "id": "chloride",
+        "label": "Cl⁻",
+        "color": "#8bab72",
+        "radius": 0.36,
+        "keyframes": [
+          { "t": 0, "pos": [-1.7, -0.5, 0.3] },
+          { "t": 0.4, "pos": [-1.2, -0.1, 0.2] },
+          { "t": 0.8, "pos": [-1.25, -0.35, 0.2] },
+          { "t": 1, "pos": [-1.15, -0.42, 0.18] }
+        ]
+      }
+    ],
+    "precipitate": {
+      "from": [0, 0, 0],
+      "color": "#f0e9db",
+      "count": 110,
+      "startT": 0.54,
+      "endT": 0.92,
+      "settleY": -1.38
+    },
+    "products": [
+      {
+        "label": "BaSO₄ 앙금",
+        "color": "#e9e1d2",
+        "keyframes": [
+          { "t": 0.72, "pos": [0, -1.55, 0] },
+          { "t": 1, "pos": [0, -1.55, 0] }
+        ],
+        "appear": [0.7, 0.82]
+      }
+    ]
+  },
+  {
+    "id": "lead-iodide",
+    "titleKo": "아이오딘화납 앙금 반응",
+    "subtitleKo": "두 수용액이 만나 물에 녹지 않는 노란색 앙금을 만듭니다",
+    "equation": "Pb(NO₃)₂ + 2KI → PbI₂↓ + 2KNO₃",
+    "netIonicEquation": "Pb²⁺ + 2I⁻ → PbI₂↓",
+    "observationKo": "Pb²⁺ + 2I⁻ → PbI₂↓. 물에 녹지 않는 아이오딘화납이 노란색 앙금으로 가라앉습니다.",
+    "sceneKo": "노란색 앙금이 가라앉는 장면",
+    "duration": 10,
+    "accent": "#b08a3e",
+    "steps": [
+      {
+        "at": 0,
+        "titleKo": "두 수용액의 이온",
+        "detailKo": "질산납 수용액의 Pb²⁺, NO₃⁻와 아이오딘화칼륨 수용액의 K⁺, I⁻가 물속에 섞여 있습니다."
+      },
+      {
+        "at": 0.25,
+        "titleKo": "Pb²⁺와 I⁻가 서로 끌립니다",
+        "detailKo": "납 이온과 아이오딘화 이온 사이의 강한 인력이 이온들을 가까이 모읍니다."
+      },
+      {
+        "at": 0.52,
+        "titleKo": "물에 녹지 않는 PbI₂가 생깁니다",
+        "detailKo": "Pb²⁺ + 2I⁻ → PbI₂↓. 아이오딘화납은 물에 거의 녹지 않아 노란색 앙금으로 나타납니다."
+      },
+      {
+        "at": 0.75,
+        "titleKo": "앙금이 가라앉습니다",
+        "detailKo": "K⁺와 NO₃⁻는 용액 속에 남아 있고, PbI₂ 앙금은 바닥에 쌓입니다."
+      }
+    ],
+    "actors": [
+      {
+        "id": "lead",
+        "label": "Pb²⁺",
+        "color": "#9a8a6a",
+        "radius": 0.38,
+        "keyframes": [
+          { "t": 0, "pos": [-2.05, 0.8, 0.3] },
+          { "t": 0.3, "pos": [-1.35, 0.5, 0.2] },
+          { "t": 0.52, "pos": [-0.2, 0.05, 0] },
+          { "t": 0.58, "pos": [0, 0, 0] }
+        ],
+        "fadeOut": [0.52, 0.6]
+      },
+      {
+        "id": "iodide-one",
+        "label": "I⁻",
+        "color": "#c9a24d",
+        "radius": 0.36,
+        "keyframes": [
+          { "t": 0, "pos": [2.05, 0.7, -0.3] },
+          { "t": 0.3, "pos": [1.35, 0.42, -0.2] },
+          { "t": 0.52, "pos": [0.3, 0.05, 0] },
+          { "t": 0.58, "pos": [0, 0, 0] }
+        ],
+        "fadeOut": [0.52, 0.6]
+      },
+      {
+        "id": "iodide-two",
+        "label": "I⁻",
+        "color": "#c9a24d",
+        "radius": 0.36,
+        "keyframes": [
+          { "t": 0, "pos": [1.55, 0.1, 0.35] },
+          { "t": 0.3, "pos": [1.0, 0.1, 0.2] },
+          { "t": 0.52, "pos": [-0.3, 0.08, 0] },
+          { "t": 0.58, "pos": [0, 0, 0] }
+        ],
+        "fadeOut": [0.52, 0.6]
+      },
+      {
+        "id": "potassium",
+        "label": "K⁺",
+        "color": "#b08bb0",
+        "radius": 0.33,
+        "keyframes": [
+          { "t": 0, "pos": [1.65, -0.6, -0.3] },
+          { "t": 0.4, "pos": [1.2, -0.15, -0.2] },
+          { "t": 0.8, "pos": [1.25, -0.38, -0.2] },
+          { "t": 1, "pos": [1.15, -0.45, -0.18] }
+        ]
+      },
+      {
+        "id": "nitrate",
+        "label": "NO₃⁻",
+        "color": "#6f8fc4",
+        "radius": 0.4,
+        "keyframes": [
+          { "t": 0, "pos": [-1.7, -0.5, 0.3] },
+          { "t": 0.4, "pos": [-1.2, -0.1, 0.2] },
+          { "t": 0.8, "pos": [-1.25, -0.35, 0.2] },
+          { "t": 1, "pos": [-1.15, -0.42, 0.18] }
+        ]
+      }
+    ],
+    "precipitate": {
+      "from": [0, 0, 0],
+      "color": "#e8c85a",
+      "count": 110,
+      "startT": 0.54,
+      "endT": 0.92,
+      "settleY": -1.38
+    },
+    "products": [
+      {
+        "label": "PbI₂ 앙금",
+        "color": "#e6cf8a",
         "keyframes": [
           { "t": 0.72, "pos": [0, -1.55, 0] },
           { "t": 1, "pos": [0, -1.55, 0] }

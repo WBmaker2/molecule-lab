@@ -12,6 +12,7 @@ export interface ElementInfo {
   radius: number;
   covalentRadius: number;
   valence: number;
+  valenceElectrons: number;
   electronegativity: number;
   categoryKo: string;
   palette: boolean;
@@ -81,6 +82,7 @@ export interface ReactionData {
   titleKo: string;
   subtitleKo: string;
   equation: string;
+  netIonicEquation: string;
   observationKo: string;
   sceneKo: string;
   duration: number;
@@ -101,6 +103,19 @@ export interface ReactionData {
     endT: number;
     settleY: number;
   };
+}
+
+export interface IonData {
+  id: string;
+  formula: string;
+  nameKo: string;
+  nameEn: string;
+  charge: number;
+  kind: 'cation' | 'anion';
+  color: string;
+  descriptionKo: string;
+  solubilityKo: string;
+  reactionIds: string[];
 }
 
 export type Phase = 'solid' | 'liquid' | 'gas';

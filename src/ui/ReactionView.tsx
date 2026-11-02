@@ -1,7 +1,10 @@
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { REACTIONS, getReaction } from '../chem/reactions';
 import { ReactionStage } from '../scene/ReactionStage';
+import { useAppStore } from '../stores/appStore';
+import { WebGLGate } from './WebGLGate';
 import { useReactionStore } from '../stores/reactionStore';
 import {
   CheckIcon,
@@ -26,7 +29,18 @@ export function ReactionView() {
   const setSpeed = useReactionStore((state) => state.setSpeed);
   const stepForward = useReactionStore((state) => state.stepForward);
   const stepBackward = useReactionStore((state) => state.stepBackward);
+  const mergeParams = useAppStore((state) => state.mergeParams);
   const [showLabels, setShowLabels] = useState(true);
+  const safeMode = useAppStore((state) => state.params.safe) === '1';
+
+  useEffect(() => {
+    mergeParams({ id: reactionId, speed: String(speed) });
+  }, [reactionId, speed, mergeParams]);
+
+  const jumpAndSync = (value: number) => {
+    jumpTo(value);
+    mergeParams({ id: reactionId, speed: String(speed), t: String(Math.round(value * 1000) / 1000) });
+  };
   const reaction = getReaction(reactionId);
   const completed = progress >= 0.999;
   const activeStepIndex = reaction.steps.reduce(
@@ -43,8 +57,8 @@ export function ReactionView() {
           <span className="view-kicker">반응 극장</span>
           <h2 id="reaction-title">이온이 만나 새로운 물질이 됩니다</h2>
           <p>
-            중화 반응과 앙금 생성 반응을 단계별로 재생해 보세요. 이온의 움직임과 반응식을 나란히
-            보며 생성물이 어떻게 만들어지는지 관찰할 수 있습니다.
+            중화 반응과 앙금 생성 반응을 단계별로 재생해 보세요. 이온의 움직임과 반응식, 알짜
+            이온식을 나란히 보며 생성물이 어떻게 만들어지는지 관찰할 수 있습니다.
           </p>
         </div>
         <div className="reaction-summary">
@@ -59,7 +73,7 @@ export function ReactionView() {
           <div className="panel-heading panel-heading-compact">
             <div>
               <h3>반응 선택</h3>
-              <p>두 가지 장면</p>
+              <p>{REACTIONS.length}가지 장면</p>
             </div>
             <span className="panel-index">{REACTIONS.length}</span>
           </div>
@@ -71,7 +85,10 @@ export function ReactionView() {
                 className={`reaction-choice${item.id === reactionId ? ' is-active' : ''}`}
                 style={{ '--reaction-accent': item.accent } as CSSProperties}
                 aria-pressed={item.id === reactionId}
-                onClick={() => setReaction(item.id)}
+                onClick={() => {
+                  setReaction(item.id);
+                  mergeParams({ id: item.id, speed: String(speed), t: '' });
+                }}
                 data-testid={`reaction-${item.id}`}
               >
                 <span className="reaction-choice-number">
@@ -124,7 +141,13 @@ export function ReactionView() {
             </div>
           </div>
           <div className="stage-canvas reaction-canvas">
-            <ReactionStage reaction={reaction} showLabels={showLabels} />
+            <WebGLGate
+              label={`${reaction.titleKo} 3D 반응 극장`}
+              summary={`${reaction.equation} 장면입니다. 타임라인 단계와 반응식을 따라 관찰하세요.`}
+              forceFallback={safeMode}
+            >
+              <ReactionStage reaction={reaction} showLabels={showLabels} />
+            </WebGLGate>
             <div className="reaction-caption" aria-hidden="true">
               <span>{Math.round(progress * 100)}%</span>
               <strong>{activeStep.titleKo}</strong>
@@ -143,7 +166,14 @@ export function ReactionView() {
               <button
                 type="button"
                 className="icon-button"
-                onClick={stepBackward}
+                onClick={() => {
+                  stepBackward();
+                  mergeParams({
+                    id: reactionId,
+                    speed: String(speed),
+                    t: String(useReactionStore.getState().progress),
+                  });
+                }}
                 aria-label="이전 단계"
               >
                 <StepBackIcon />
@@ -161,7 +191,14 @@ export function ReactionView() {
               <button
                 type="button"
                 className="icon-button"
-                onClick={stepForward}
+                onClick={() => {
+                  stepForward();
+                  mergeParams({
+                    id: reactionId,
+                    speed: String(speed),
+                    t: String(useReactionStore.getState().progress),
+                  });
+                }}
                 aria-label="다음 단계"
               >
                 <StepForwardIcon />
@@ -182,7 +219,7 @@ export function ReactionView() {
                 aria-valuetext={`${Math.round(progress * 100)}퍼센트`}
                 data-testid="reaction-progress"
                 data-progress={progress.toFixed(3)}
-                onChange={(event) => jumpTo(Number(event.target.value) / 1000)}
+                onChange={(event) => jumpAndSync(Number(event.target.value) / 1000)}
               />
               <span className="theater-time" aria-hidden="true">
                 {elapsed.toFixed(1)}s / {reaction.duration}s
@@ -214,6 +251,8 @@ export function ReactionView() {
           >
             <span className="equation-label">반응식</span>
             <strong>{reaction.equation}</strong>
+            <span className="equation-label">알짜 이온식</span>
+            <strong>{reaction.netIonicEquation}</strong>
             <small>{reaction.subtitleKo}</small>
           </div>
 
@@ -232,7 +271,7 @@ export function ReactionView() {
                 <button
                   type="button"
                   className={`timeline-step${index === activeStepIndex ? ' is-active' : ''}`}
-                  onClick={() => jumpTo(step.at)}
+                  onClick={() => jumpAndSync(step.at)}
                   aria-current={index === activeStepIndex ? 'step' : undefined}
                 >
                   <span className="timeline-number">{index + 1}</span>

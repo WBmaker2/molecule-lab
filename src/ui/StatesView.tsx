@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { Phase } from '../chem/types';
+import { decideQuality, type RenderQuality } from '../lib/quality';
 import { ParticleStage } from '../scene/ParticleStage';
 import { useSimStore } from '../stores/simStore';
 import {
@@ -9,10 +10,14 @@ import {
   MELTING_POINT,
   BOILING_POINT,
   PHASE_INFO,
+  densityNoteKo,
   phaseForTemperature,
   volumeForTemperature,
+  waterDensityKgPerL,
 } from '../sim/temperature';
+import { useAppStore } from '../stores/appStore';
 import { CoolIcon, HeatIcon, PauseIcon, PlayIcon } from './icons';
+import { WebGLGate } from './WebGLGate';
 
 export function StatesView() {
   const temperature = useSimStore((state) => state.temperature);
@@ -22,12 +27,27 @@ export function StatesView() {
   const setTemperature = useSimStore((state) => state.setTemperature);
   const setParticleCount = useSimStore((state) => state.setParticleCount);
   const togglePaused = useSimStore((state) => state.togglePaused);
+  const quality = useSimStore((state) => state.quality);
+  const setQuality = useSimStore((state) => state.setQuality);
   const setMetrics = useSimStore((state) => state.setMetrics);
+  const [autoQuality, setAutoQuality] = useState<RenderQuality>('high');
+  const safeMode = useAppStore((state) => state.params.safe) === '1';
+  const mergeParams = useAppStore((state) => state.mergeParams);
   const [autoMode, setAutoMode] = useState<'heat' | 'cool' | null>(null);
   const phase = PHASE_INFO[phaseForTemperature(temperature)];
   const volume = volumeForTemperature(temperature);
   const volumePercent = Math.round(volume * 100);
+  const density = waterDensityKgPerL(temperature);
   const tempPercent = ((temperature - MIN_TEMPERATURE) / (MAX_TEMPERATURE - MIN_TEMPERATURE)) * 100;
+
+  useEffect(() => {
+    mergeParams({
+      temp: String(temperature),
+      count: String(particleCount),
+      paused: paused ? '1' : '0',
+      quality,
+    });
+  }, [temperature, particleCount, paused, quality, mergeParams]);
 
   useEffect(() => {
     if (!autoMode) return;
@@ -50,9 +70,11 @@ export function StatesView() {
   const handleMetrics = useCallback(
     (next: { fps: number; order: number; speed: number }) => {
       setMetrics(next);
+      setAutoQuality((current) => decideQuality(current, next.fps));
     },
     [setMetrics],
   );
+  const effectiveQuality: RenderQuality = quality === 'auto' ? autoQuality : quality;
 
   const goToPhase = (target: Phase) => {
     setAutoMode(null);
@@ -110,19 +132,26 @@ export function StatesView() {
             </div>
           </div>
           <div className="stage-canvas states-canvas">
-            <ParticleStage
-              temperature={temperature}
-              count={particleCount}
-              paused={paused}
-              onMetrics={handleMetrics}
-            />
+            <WebGLGate
+              label="온도에 따른 입자 운동 3D 무대"
+              summary={`현재 ${temperature.toFixed(0)}°C ${phase.nameKo}, 입자 ${particleCount.toLocaleString('ko-KR')}개, 상대 부피 ${volumePercent}%입니다.`}
+              forceFallback={safeMode}
+            >
+              <ParticleStage
+                temperature={temperature}
+                count={particleCount}
+                paused={paused}
+                quality={effectiveQuality}
+                onMetrics={handleMetrics}
+              />
+            </WebGLGate>
             <div className="phase-overlay" aria-hidden="true">
               <span>{phase.nameKo}</span>
               <strong>{temperature.toFixed(0)}°C</strong>
               <small>{phase.motionKo}</small>
             </div>
             <div className="volume-overlay" aria-hidden="true">
-              <span>상대 부피</span>
+              <span>상대 부피 · 밀도 {density.toFixed(2)}kg/L</span>
               <strong>{volumePercent}%</strong>
               <div className="volume-track">
                 <i style={{ width: `${Math.min(100, (volume / 1.4) * 100)}%` }} />
@@ -219,6 +248,7 @@ export function StatesView() {
           <div className="phase-description">
             <span className="phase-description-label">{phase.motionKo}</span>
             <p>{phase.descriptionKo}</p>
+            <p>{densityNoteKo(temperature)}</p>
           </div>
 
           <div className="sim-metrics" aria-label="시뮬레이션 지표">
@@ -261,6 +291,25 @@ export function StatesView() {
               aria-valuetext={`${particleCount}개`}
               onChange={(event) => setParticleCount(Number(event.target.value))}
             />
+            <div className="particle-quick" role="group" aria-label="화질 선택">
+              {(
+                [
+                  { id: 'auto', label: '자동' },
+                  { id: 'high', label: '고화질' },
+                  { id: 'low', label: '저전력' },
+                ] as const
+              ).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={quality === item.id ? 'is-active' : ''}
+                  aria-pressed={quality === item.id}
+                  onClick={() => setQuality(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
             <div className="particle-quick" role="group" aria-label="입자 수 빠른 선택">
               {[200, 1000, 1500, 2000].map((value) => (
                 <button

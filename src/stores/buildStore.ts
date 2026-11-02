@@ -10,18 +10,36 @@ import {
   scale,
   SINGLE_BOND_LENGTH,
 } from '../chem/bondRules';
-import { displayFormula } from '../chem/analysis';
+import { canSetBondOrder, displayFormula } from '../chem/analysis';
 import { centralAtomIndex, getMolecule } from '../chem/molecules';
+import { targetRelativePosition } from '../chem/targetGeometry';
+import type { WorkbenchPayload } from '../lib/share';
+import { parseWorkbench, serializeWorkbench } from '../lib/share';
 import type { Atom, Bond, ElementSymbol, Vec3 } from '../chem/types';
 import { ELEMENTS } from '../chem/elements';
+
+interface BuildSnapshot {
+  atoms: Atom[];
+  bonds: Bond[];
+  selectedAtomId: string | null;
+  measureTargetId: string | null;
+  targetId: string;
+  atomSerial: number;
+  bondSerial: number;
+}
 
 interface BuildState {
   atoms: Atom[];
   bonds: Bond[];
   selectedAtomId: string | null;
+  measureTargetId: string | null;
   targetId: string;
+  past: BuildSnapshot[];
+  future: BuildSnapshot[];
+  dragMode: 'move' | 'rotate';
   showPolarity: boolean;
   showAngles: boolean;
+  showLonePairs: boolean;
   dragging: boolean;
   notice: string;
   atomSerial: number;
@@ -29,15 +47,24 @@ interface BuildState {
   addAtom: (element: ElementSymbol) => void;
   removeAtom: (id: string) => void;
   removeBond: (id: string) => void;
+  cycleBondOrder: (id: string) => void;
   clear: () => void;
   selectAtom: (id: string | null) => void;
+  setMeasureTarget: (id: string | null) => void;
   moveAtom: (id: string, position: Vec3) => void;
   snapDraggedAtom: (id: string) => void;
   bondSelectedTo: (hostId: string) => void;
   autoBondSelected: () => void;
   loadMolecule: (id: string, mode: 'complete' | 'target') => void;
+  exportWorkbench: () => WorkbenchPayload;
+  importWorkbench: (payload: unknown) => void;
+  setDragMode: (mode: 'move' | 'rotate') => void;
+  undo: () => void;
+  redo: () => void;
+  duplicateSelected: () => void;
   togglePolarity: () => void;
   toggleAngles: () => void;
+  toggleLonePairs: () => void;
   setDragging: (dragging: boolean) => void;
   setNotice: (notice: string) => void;
 }
@@ -57,13 +84,41 @@ const initialBonds: Bond[] = initialMolecule.bonds.map((bond, index) => ({
   ionic: bond.ionic,
 }));
 
+function snapshotOf(state: BuildState): BuildSnapshot {
+  return {
+    atoms: state.atoms.map((atom) => ({ ...atom, position: [...atom.position] as Vec3 })),
+    bonds: state.bonds.map((bond) => ({ ...bond })),
+    selectedAtomId: state.selectedAtomId,
+    measureTargetId: state.measureTargetId,
+    targetId: state.targetId,
+    atomSerial: state.atomSerial,
+    bondSerial: state.bondSerial,
+  };
+}
+
+function pushHistory(
+  get: () => BuildState,
+  set: (partial: Partial<BuildState>) => void,
+): void {
+  const state = get();
+  set({
+    past: [...state.past, snapshotOf(state)].slice(-50),
+    future: [],
+  });
+}
+
 export const useBuildStore = create<BuildState>((set, get) => ({
   atoms: initialAtoms,
   bonds: initialBonds,
   selectedAtomId: 'a1',
+  measureTargetId: null,
   targetId: 'h2o',
+  past: [],
+  future: [],
+  dragMode: 'move',
   showPolarity: true,
   showAngles: true,
+  showLonePairs: true,
   dragging: false,
   notice: '물 분자 표본입니다. 원자를 끌어 직접 조립하거나 도감을 둘러보세요.',
   atomSerial: initialAtoms.length + 1,
@@ -77,6 +132,7 @@ export const useBuildStore = create<BuildState>((set, get) => ({
       element,
       position,
     };
+    pushHistory(get, set);
     set({
       atoms: [...state.atoms, atom],
       selectedAtomId: atom.id,
@@ -89,10 +145,12 @@ export const useBuildStore = create<BuildState>((set, get) => ({
     const state = get();
     const atom = state.atoms.find((candidate) => candidate.id === id);
     if (!atom) return;
+    pushHistory(get, set);
     set({
       atoms: state.atoms.filter((candidate) => candidate.id !== id),
       bonds: state.bonds.filter((bond) => bond.a !== id && bond.b !== id),
       selectedAtomId: state.selectedAtomId === id ? null : state.selectedAtomId,
+      measureTargetId: state.measureTargetId === id ? null : state.measureTargetId,
       notice: `${ELEMENTS[atom.element].nameKo} 원자를 치웠습니다.`,
     });
   },
@@ -101,17 +159,39 @@ export const useBuildStore = create<BuildState>((set, get) => ({
     const state = get();
     const bond = state.bonds.find((candidate) => candidate.id === id);
     if (!bond) return;
+    pushHistory(get, set);
     set({
       bonds: state.bonds.filter((candidate) => candidate.id !== id),
       notice: '결합을 끊었습니다. 두 원자는 실험대에 그대로 남아 있습니다.',
     });
   },
 
+  cycleBondOrder: (id) => {
+    const state = get();
+    const bond = state.bonds.find((candidate) => candidate.id === id);
+    if (!bond) return;
+    const nextOrder = bond.order === 1 ? 2 : bond.order === 2 ? 3 : 1;
+    const validation = canSetBondOrder(state.atoms, state.bonds, id, nextOrder);
+    if (!validation.ok) {
+      set({ notice: validation.reasonKo ?? '결합 차수를 바꿀 수 없습니다.' });
+      return;
+    }
+    pushHistory(get, set);
+    set({
+      bonds: state.bonds.map((candidate) =>
+        candidate.id === id ? { ...candidate, order: nextOrder } : candidate,
+      ),
+      notice: `결합 차수를 ${nextOrder}중 결합으로 바꾸었습니다.`,
+    });
+  },
+
   clear: () => {
+    pushHistory(get, set);
     set({
       atoms: [],
       bonds: [],
       selectedAtomId: null,
+      measureTargetId: null,
       atomSerial: 1,
       bondSerial: 1,
       notice: '실험대를 비웠습니다. 팔레트에서 원자를 골라 새로 시작하세요.',
@@ -120,11 +200,14 @@ export const useBuildStore = create<BuildState>((set, get) => ({
 
   selectAtom: (id) => set({ selectedAtomId: id }),
 
+  setMeasureTarget: (id) => set({ measureTargetId: id }),
+
   moveAtom: (id, position) => {
     const state = get();
     const safePosition = position.map((value) =>
       Number.isFinite(value) ? Math.max(-9, Math.min(9, value)) : 0,
     ) as Vec3;
+    if (!state.dragging) pushHistory(get, set);
     set({
       atoms: state.atoms.map((atom) =>
         atom.id === id ? { ...atom, position: safePosition } : atom,
@@ -242,6 +325,7 @@ export const useBuildStore = create<BuildState>((set, get) => ({
       nextBonds,
       state.targetId,
     );
+    pushHistory(get, set);
     set({
       atoms: nextAtoms,
       bonds: nextBonds,
@@ -311,10 +395,12 @@ export const useBuildStore = create<BuildState>((set, get) => ({
         ionic: bond.ionic,
       }));
       const center = centralAtomIndex(molecule);
+      pushHistory(get, set);
       set({
         atoms,
         bonds,
         selectedAtomId: `a${center + 1}`,
+        measureTargetId: null,
         targetId: id,
         atomSerial: atoms.length + 1,
         bondSerial: bonds.length + 1,
@@ -338,14 +424,116 @@ export const useBuildStore = create<BuildState>((set, get) => ({
             targetIndex: index,
           },
     );
+    pushHistory(get, set);
     set({
       atoms,
       bonds: [],
       selectedAtomId: `a${center + 1}`,
+      measureTargetId: null,
       targetId: id,
       atomSerial: atoms.length + 1,
       bondSerial: 1,
       notice: `${molecule.nameKo} 목표가 준비되었습니다. 원자를 끌어 ${displayFormula(molecule.formula)} 분자를 완성해 보세요.`,
+    });
+  },
+
+  setDragMode: (mode) => set({ dragMode: mode }),
+
+  undo: () => {
+    const state = get();
+    const previous = state.past[state.past.length - 1];
+    if (!previous) {
+      set({ notice: '되돌릴 작업이 없습니다.' });
+      return;
+    }
+    set({
+      atoms: previous.atoms,
+      bonds: previous.bonds,
+      selectedAtomId: previous.selectedAtomId,
+      measureTargetId: previous.measureTargetId,
+      targetId: previous.targetId,
+      atomSerial: previous.atomSerial,
+      bondSerial: previous.bondSerial,
+      past: state.past.slice(0, -1),
+      future: [snapshotOf(state), ...state.future].slice(-50),
+      dragging: false,
+      notice: '실행을 취소했습니다.',
+    });
+  },
+
+  redo: () => {
+    const state = get();
+    const next = state.future[state.future.length - 1];
+    if (!next) {
+      set({ notice: '다시 실행할 작업이 없습니다.' });
+      return;
+    }
+    set({
+      atoms: next.atoms,
+      bonds: next.bonds,
+      selectedAtomId: next.selectedAtomId,
+      measureTargetId: next.measureTargetId,
+      targetId: next.targetId,
+      atomSerial: next.atomSerial,
+      bondSerial: next.bondSerial,
+      past: [...state.past, snapshotOf(state)].slice(-50),
+      future: state.future.slice(0, -1),
+      dragging: false,
+      notice: '실행을 다시 적용했습니다.',
+    });
+  },
+
+  duplicateSelected: () => {
+    const state = get();
+    const selected = state.atoms.find((atom) => atom.id === state.selectedAtomId);
+    if (!selected) {
+      set({ notice: '먼저 복제할 원자를 선택하세요.' });
+      return;
+    }
+    const position: Vec3 = [
+      Math.max(-9, Math.min(9, selected.position[0] + 0.8)),
+      Math.max(-9, Math.min(9, selected.position[1] + 0.8)),
+      Math.max(-9, Math.min(9, selected.position[2])),
+    ];
+    pushHistory(get, set);
+    set({
+      atoms: [...state.atoms, { ...selected, id: `a${state.atomSerial}`, position }],
+      selectedAtomId: `a${state.atomSerial}`,
+      atomSerial: state.atomSerial + 1,
+      notice: `${ELEMENTS[selected.element].nameKo} 원자를 복제했습니다.`,
+    });
+  },
+
+  exportWorkbench: () => {
+    const state = get();
+    return serializeWorkbench({
+      targetId: state.targetId,
+      atoms: state.atoms,
+      bonds: state.bonds,
+      selectedAtomId: state.selectedAtomId,
+      atomSerial: state.atomSerial,
+      bondSerial: state.bondSerial,
+    });
+  },
+
+  importWorkbench: (payload: unknown) => {
+    let snapshot;
+    try {
+      snapshot = parseWorkbench(payload);
+    } catch (error) {
+      set({ notice: error instanceof Error ? error.message : '작업대를 불러오지 못했습니다.' });
+      return;
+    }
+    pushHistory(get, set);
+    set({
+      targetId: snapshot.targetId,
+      atoms: snapshot.atoms,
+      bonds: snapshot.bonds,
+      selectedAtomId: snapshot.selectedAtomId,
+      measureTargetId: null,
+      atomSerial: snapshot.atomSerial,
+      bondSerial: snapshot.bondSerial,
+      notice: '저장된 작업대를 불러왔습니다.',
     });
   },
 
@@ -359,6 +547,14 @@ export const useBuildStore = create<BuildState>((set, get) => ({
     set((state) => ({
       showAngles: !state.showAngles,
       notice: state.showAngles ? '결합각 표시를 껐습니다.' : '선택한 원자의 결합각을 표시합니다.',
+    })),
+
+  toggleLonePairs: () =>
+    set((state) => ({
+      showLonePairs: !state.showLonePairs,
+      notice: state.showLonePairs
+        ? '비공유 전자쌍 표시를 껐습니다.'
+        : '비공유 전자쌍을 반투명 표시로 보여줍니다.',
     })),
 
   setDragging: (dragging) => set({ dragging }),
@@ -413,31 +609,4 @@ function nextGuidedSelection(
   if (current && missingFor(current) > 0) return current.id;
   const next = atoms.find((atom) => missingFor(atom) > 0);
   return next?.id ?? selectedId;
-}
-
-function targetRelativePosition(
-  targetId: string,
-  moving: Atom,
-  anchor: Atom,
-): { position: Vec3; order: 1 | 2 | 3; ionic?: boolean } | null {
-  if (moving.targetIndex === undefined || anchor.targetIndex === undefined) return null;
-  const molecule = getMolecule(targetId);
-  const bond = molecule.bonds.find(
-    (candidate) =>
-      (candidate.a === moving.targetIndex && candidate.b === anchor.targetIndex) ||
-      (candidate.b === moving.targetIndex && candidate.a === anchor.targetIndex),
-  );
-  if (!bond) return null;
-  const targetMoving = molecule.atoms[moving.targetIndex]?.position;
-  const targetAnchor = molecule.atoms[anchor.targetIndex]?.position;
-  if (!targetMoving || !targetAnchor) return null;
-  return {
-    position: [
-      anchor.position[0] + targetMoving[0] - targetAnchor[0],
-      anchor.position[1] + targetMoving[1] - targetAnchor[1],
-      anchor.position[2] + targetMoving[2] - targetAnchor[2],
-    ],
-    order: bond.order,
-    ionic: bond.ionic,
-  };
 }
