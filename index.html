@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Molecule Lab은 원자를 조립해 분자를 만들고 상태변화와 화학반응을 관찰하는 화학 수업 도구입니다."
+    />
+    <meta name="theme-color" content="#e8dcc7" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <title>Molecule Lab — 3D 분자 표본실</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #e8dcc7;
+        color: #2b2920;
+      }
+      .boot {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 10px;
+        background: radial-gradient(circle at 50% 42%, #f2ead9 0%, #e8dcc7 58%, #d9c8ab 100%);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      }
+      .boot-title {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 800;
+      }
+      .boot-sub {
+        margin: 0;
+        color: #6f674f;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="boot" class="boot" role="status" aria-live="polite">
+      <p class="boot-title">Molecule Lab</p>
+      <p class="boot-sub">3D 분자 표본실을 준비하고 있습니다</p>
+    </div>
+    <noscript
+      ><div style="position: fixed; inset: 0; display: grid; place-content: center; padding: 24px">
+        Molecule Lab을 사용하려면 JavaScript를 허용해야 합니다.
+      </div></noscript
+    >
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

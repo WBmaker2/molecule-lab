@@ -1,0 +1,258 @@
+[
+  {
+    "id": "h2o",
+    "formula": "H2O",
+    "nameKo": "물",
+    "nameEn": "Water",
+    "category": "생명·환경",
+    "atoms": [
+      { "element": "O", "position": [0, 0, 0] },
+      { "element": "H", "position": [1.18604, 0.91834, 0] },
+      { "element": "H", "position": [-1.18604, 0.91834, 0] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 1 },
+      { "a": 0, "b": 2, "order": 1 }
+    ],
+    "shapeKo": "굽은형",
+    "polarityKo": "극성",
+    "angleKo": "H–O–H 104.5°",
+    "descriptionKo": "산소 한 개에 수소 두 개가 비스듬히 붙은 굽은형 분자입니다. 결합의 극성이 상쇄되지 않아 수소 결합을 만들고, 그 덕분에 물은 표면장력이 크고 끓는점이 높습니다.",
+    "factKo": "얼음은 물보다 밀도가 작아 물 위에 뜹니다.",
+    "accent": "#b87a52"
+  },
+  {
+    "id": "co2",
+    "formula": "CO2",
+    "nameKo": "이산화탄소",
+    "nameEn": "Carbon dioxide",
+    "category": "연소·기체",
+    "atoms": [
+      { "element": "C", "position": [0, 0, 0] },
+      { "element": "O", "position": [1.35, 0, 0] },
+      { "element": "O", "position": [-1.35, 0, 0] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 2 },
+      { "a": 0, "b": 2, "order": 2 }
+    ],
+    "shapeKo": "선형",
+    "polarityKo": "무극성",
+    "angleKo": "O=C=O 180°",
+    "descriptionKo": "탄소가 산소 두 개와 이중 결합을 한 선형 분자입니다. 두 결합의 극성이 정확히 반대 방향으로 상쇄되어 전체 분자는 무극성입니다.",
+    "factKo": "고체 이산화탄소는 드라이아이스로 승화합니다.",
+    "accent": "#7d8a76"
+  },
+  {
+    "id": "ch4",
+    "formula": "CH4",
+    "nameKo": "메탄",
+    "nameEn": "Methane",
+    "category": "연소·기체",
+    "atoms": [
+      { "element": "C", "position": [0, 0, 0] },
+      { "element": "H", "position": [0.86603, 0.86603, 0.86603] },
+      { "element": "H", "position": [0.86603, -0.86603, -0.86603] },
+      { "element": "H", "position": [-0.86603, 0.86603, -0.86603] },
+      { "element": "H", "position": [-0.86603, -0.86603, 0.86603] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 1 },
+      { "a": 0, "b": 2, "order": 1 },
+      { "a": 0, "b": 3, "order": 1 },
+      { "a": 0, "b": 4, "order": 1 }
+    ],
+    "shapeKo": "정사면체형",
+    "polarityKo": "무극성",
+    "angleKo": "H–C–H 109.5°",
+    "descriptionKo": "탄소를 중심으로 수소 네 개가 정사면체의 꼭짓점 방향으로 붙은 분자입니다. 결합 방향이 대칭이라 결합의 극성이 서로 상쇄됩니다.",
+    "factKo": "천연가스의 주성분이며 연소하면 물과 이산화탄소가 됩니다.",
+    "accent": "#8a9475"
+  },
+  {
+    "id": "nh3",
+    "formula": "NH3",
+    "nameKo": "암모니아",
+    "nameEn": "Ammonia",
+    "category": "생명·환경",
+    "atoms": [
+      { "element": "N", "position": [0, 0, 0] },
+      { "element": "H", "position": [1.3923, 0.55807, 0] },
+      { "element": "H", "position": [-0.69615, 0.55807, 1.20575] },
+      { "element": "H", "position": [-0.69615, 0.55807, -1.20575] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 1 },
+      { "a": 0, "b": 2, "order": 1 },
+      { "a": 0, "b": 3, "order": 1 }
+    ],
+    "shapeKo": "삼각뿔형",
+    "polarityKo": "극성",
+    "angleKo": "H–N–H 약 107°",
+    "descriptionKo": "질소에 수소 세 개가 붙은 삼각뿔형 분자입니다. 질소의 비공유 전자쌍이 한쪽으로 치우쳐 극성을 띠고, 물에 잘 녹습니다.",
+    "factKo": "질소 비료와 냉매의 원료로 널리 쓰입니다.",
+    "accent": "#788ca9"
+  },
+  {
+    "id": "o2",
+    "formula": "O2",
+    "nameKo": "산소",
+    "nameEn": "Oxygen",
+    "category": "연소·기체",
+    "atoms": [
+      { "element": "O", "position": [-0.675, 0, 0] },
+      { "element": "O", "position": [0.675, 0, 0] }
+    ],
+    "bonds": [{ "a": 0, "b": 1, "order": 2 }],
+    "shapeKo": "선형",
+    "polarityKo": "무극성",
+    "angleKo": "이원자 분자",
+    "descriptionKo": "산소 원자 두 개가 이중 결합으로 묶인 이원자 분자입니다. 같은 원자끼리 결합하므로 결합의 극성이 없습니다.",
+    "factKo": "액체 산소는 옅은 파란색을 띱니다.",
+    "accent": "#c06346"
+  },
+  {
+    "id": "n2",
+    "formula": "N2",
+    "nameKo": "질소",
+    "nameEn": "Nitrogen",
+    "category": "연소·기체",
+    "atoms": [
+      { "element": "N", "position": [-0.625, 0, 0] },
+      { "element": "N", "position": [0.625, 0, 0] }
+    ],
+    "bonds": [{ "a": 0, "b": 1, "order": 3 }],
+    "shapeKo": "선형",
+    "polarityKo": "무극성",
+    "angleKo": "이원자 분자",
+    "descriptionKo": "두 질소 원자가 삼중 결합으로 단단하게 묶인 이원자 분자입니다. 결합을 끊기 어려워 반응성이 매우 낮습니다.",
+    "factKo": "지구 대기의 약 78%를 질소 분자가 차지합니다.",
+    "accent": "#6f8ab0"
+  },
+  {
+    "id": "h2",
+    "formula": "H2",
+    "nameKo": "수소",
+    "nameEn": "Hydrogen",
+    "category": "연소·기체",
+    "atoms": [
+      { "element": "H", "position": [-0.75, 0, 0] },
+      { "element": "H", "position": [0.75, 0, 0] }
+    ],
+    "bonds": [{ "a": 0, "b": 1, "order": 1 }],
+    "shapeKo": "선형",
+    "polarityKo": "무극성",
+    "angleKo": "이원자 분자",
+    "descriptionKo": "가장 가벼운 이원자 분자입니다. 연소하면 산소와 결합해 물만 남기 때문에 청정 연료로 연구됩니다.",
+    "factKo": "우주에서 가장 흔하게 발견되는 분자입니다.",
+    "accent": "#a9a08d"
+  },
+  {
+    "id": "hcl",
+    "formula": "HCl",
+    "nameKo": "염화수소",
+    "nameEn": "Hydrogen chloride",
+    "category": "산·염기",
+    "atoms": [
+      { "element": "H", "position": [-1, 0, 0] },
+      { "element": "Cl", "position": [0.5, 0, 0] }
+    ],
+    "bonds": [{ "a": 0, "b": 1, "order": 1 }],
+    "shapeKo": "선형",
+    "polarityKo": "극성",
+    "angleKo": "이원자 분자",
+    "descriptionKo": "수소와 염소가 단일 결합한 극성 분자입니다. 염소가 전자를 더 강하게 끌어당겨 수소 쪽이 부분적으로 양전하를 띱니다.",
+    "factKo": "물에 녹으면 염산이 되고, 위액의 산성 성분이기도 합니다.",
+    "accent": "#8c9a64"
+  },
+  {
+    "id": "nacl",
+    "formula": "NaCl",
+    "nameKo": "염화나트륨",
+    "nameEn": "Sodium chloride",
+    "category": "산·염기",
+    "atoms": [
+      { "element": "Na", "position": [-1, 0, 0] },
+      { "element": "Cl", "position": [1, 0, 0] }
+    ],
+    "bonds": [{ "a": 0, "b": 1, "order": 1, "ionic": true }],
+    "shapeKo": "이온 결합",
+    "polarityKo": "이온성",
+    "angleKo": "이온 화합물",
+    "descriptionKo": "나트륨 이온과 염화 이온이 정전기적 인력으로 결합한 이온 화합물입니다. 물에 녹으면 각각의 이온으로 나뉩니다.",
+    "factKo": "소금 결정은 입방체 모양으로 자랍니다.",
+    "accent": "#9b8a70"
+  },
+  {
+    "id": "so2",
+    "formula": "SO2",
+    "nameKo": "이산화황",
+    "nameEn": "Sulfur dioxide",
+    "category": "생명·환경",
+    "atoms": [
+      { "element": "S", "position": [0, 0, 0] },
+      { "element": "O", "position": [1.206, 0.711, 0] },
+      { "element": "O", "position": [-1.206, 0.711, 0] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 2 },
+      { "a": 0, "b": 2, "order": 2 }
+    ],
+    "shapeKo": "굽은형",
+    "polarityKo": "극성",
+    "angleKo": "O=S=O 약 119°",
+    "descriptionKo": "황이 산소 두 개와 결합한 굽은형 분자입니다. 결합의 극성이 상쇄되지 않아 극성을 띠고, 자극적인 냄새가 납니다.",
+    "factKo": "화산 가스에 포함되며 산성비의 원인이 되기도 합니다.",
+    "accent": "#b29652"
+  },
+  {
+    "id": "h2s",
+    "formula": "H2S",
+    "nameKo": "황화수소",
+    "nameEn": "Hydrogen sulfide",
+    "category": "산·염기",
+    "atoms": [
+      { "element": "S", "position": [0, 0, 0] },
+      { "element": "H", "position": [0.9639, 0.9309, 0] },
+      { "element": "H", "position": [-0.9639, 0.9309, 0] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 1 },
+      { "a": 0, "b": 2, "order": 1 }
+    ],
+    "shapeKo": "굽은형",
+    "polarityKo": "극성",
+    "angleKo": "H–S–H 약 92°",
+    "descriptionKo": "황에 수소 두 개가 붙은 굽은형 분자입니다. 산소 대신 황이 들어가면서 결합각이 물보다 작아집니다.",
+    "factKo": "썩은 달걀 냄새의 원인이며 독성이 있어 환기가 필요합니다.",
+    "accent": "#a08f55"
+  },
+  {
+    "id": "c2h4",
+    "formula": "C2H4",
+    "nameKo": "에텐",
+    "nameEn": "Ethene",
+    "category": "유기 화학",
+    "atoms": [
+      { "element": "C", "position": [-0.675, 0, 0] },
+      { "element": "C", "position": [0.675, 0, 0] },
+      { "element": "H", "position": [-1.425, 1.299, 0] },
+      { "element": "H", "position": [-1.425, -1.299, 0] },
+      { "element": "H", "position": [1.425, 1.299, 0] },
+      { "element": "H", "position": [1.425, -1.299, 0] }
+    ],
+    "bonds": [
+      { "a": 0, "b": 1, "order": 2 },
+      { "a": 0, "b": 2, "order": 1 },
+      { "a": 0, "b": 3, "order": 1 },
+      { "a": 1, "b": 4, "order": 1 },
+      { "a": 1, "b": 5, "order": 1 }
+    ],
+    "shapeKo": "평면형",
+    "polarityKo": "무극성",
+    "angleKo": "H–C–H 120°",
+    "descriptionKo": "탄소 두 개가 이중 결합을 하고 수소 네 개가 같은 평면에 놓인 분자입니다. 대칭적인 평면 구조라 전체는 무극성입니다.",
+    "factKo": "과일 숙성을 촉진하며 폴리에틸렌 플라스틱의 원료입니다.",
+    "accent": "#8c9371"
+  }
+]

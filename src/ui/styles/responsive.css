@@ -1,0 +1,577 @@
+@media (max-width: 1380px) {
+  .build-layout {
+    grid-template-columns: 218px minmax(0, 1fr) 326px;
+  }
+
+  .reaction-layout {
+    grid-template-columns: 210px minmax(0, 1fr) 320px;
+  }
+}
+
+@media (max-width: 1240px) {
+  .build-layout {
+    grid-template-columns: 218px minmax(0, 1fr);
+    height: auto;
+    min-height: 0;
+  }
+
+  .build-layout .stage-shell {
+    min-height: 610px;
+  }
+
+  .build-layout .inspector {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .build-layout .inspector > .panel-heading,
+  .build-layout .inspector > .verdict-card,
+  .build-layout .inspector > .summary-formula,
+  .build-layout .inspector > .selected-card,
+  .build-layout .inspector > .stat-grid,
+  .build-layout .inspector > .inspector-hint {
+    grid-column: 1 / -1;
+  }
+
+  .states-layout {
+    grid-template-columns: minmax(0, 1fr) 350px;
+  }
+
+  .reaction-layout {
+    grid-template-columns: minmax(0, 1fr) 330px;
+    height: auto;
+  }
+
+  .reaction-list {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+
+  .reaction-list > .panel-heading,
+  .reaction-list > .reaction-list-note,
+  .reaction-choice-list {
+    grid-column: 1 / -1;
+  }
+
+  .reaction-choice-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reaction-stage {
+    min-height: 650px;
+  }
+
+  .timeline-panel {
+    max-height: 650px;
+  }
+}
+
+@media (max-width: 1040px) {
+  .masthead-note {
+    display: none;
+  }
+
+  .masthead-inner {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .view-tabs {
+    justify-self: end;
+  }
+
+  .state-summary {
+    justify-content: space-between;
+  }
+
+  .states-layout,
+  .quiz-layout {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+
+  .states-stage,
+  .quiz-stage {
+    min-height: 560px;
+  }
+
+  .sim-panel,
+  .quiz-panel {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .reaction-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reaction-list {
+    grid-column: auto;
+  }
+
+  .reaction-stage {
+    min-height: 620px;
+  }
+
+  .timeline-panel {
+    max-height: none;
+  }
+}
+
+@media (max-width: 820px) {
+  :root {
+    --header-h: 118px;
+    --formula-h: 96px;
+  }
+
+  body {
+    padding-bottom: calc(var(--formula-h) + 20px);
+  }
+
+  .masthead-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 9px 14px 8px;
+  }
+
+  .brand {
+    justify-self: start;
+  }
+
+  .brand-mark {
+    width: 39px;
+    height: 39px;
+  }
+
+  .brand-mark svg {
+    width: 31px;
+    height: 31px;
+  }
+
+  .brand-title {
+    font-size: 20px;
+  }
+
+  .view-tabs {
+    justify-self: stretch;
+    justify-content: flex-start;
+    border-radius: 15px;
+  }
+
+  .view-tab {
+    flex: none;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .app-main {
+    padding: 16px 13px 8px;
+  }
+
+  .view-heading {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 13px;
+    margin-bottom: 14px;
+  }
+
+  .target-card,
+  .state-summary,
+  .reaction-summary,
+  .library-summary,
+  .quiz-score {
+    width: 100%;
+  }
+
+  .view-heading h2 {
+    font-size: clamp(27px, 7vw, 35px);
+  }
+
+  .view-heading-copy > p {
+    font-size: 13.5px;
+  }
+
+  .build-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .build-layout .stage-shell {
+    order: 1;
+    min-height: 520px;
+  }
+
+  .build-layout .palette {
+    order: 2;
+    overflow: visible;
+  }
+
+  .build-layout .inspector {
+    order: 3;
+    display: flex;
+    grid-column: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .build-layout .inspector > * {
+    grid-column: auto;
+  }
+
+  .element-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .element-button {
+    justify-content: center;
+  }
+
+  .element-copy strong {
+    font-size: 11.5px;
+  }
+
+  .element-copy small {
+    display: none;
+  }
+
+  .states-layout,
+  .reaction-layout,
+  .quiz-layout {
+    gap: 12px;
+  }
+
+  .states-stage,
+  .reaction-stage,
+  .quiz-stage {
+    min-height: 520px;
+  }
+
+  .sim-panel,
+  .timeline-panel,
+  .quiz-panel {
+    padding: 14px;
+  }
+
+  .reaction-choice-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reaction-list {
+    grid-template-columns: 1fr;
+  }
+
+  .specimen-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .formula-inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    min-height: var(--formula-h);
+    padding: 8px 14px;
+  }
+
+  .formula-eyebrow {
+    display: none;
+  }
+
+  .formula-value {
+    font-size: 29px;
+    min-width: 54px;
+  }
+
+  .formula-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .formula-verdict {
+    font-size: 11.5px;
+    gap: 7px;
+  }
+
+  .formula-target {
+    font-size: 9.5px;
+    padding: 3px 7px;
+  }
+
+  .formula-context {
+    font-size: 11.5px;
+  }
+
+  .formula-meta {
+    gap: 8px;
+    font-size: 8.5px;
+  }
+
+  .formula-meta span + span {
+    padding-left: 8px;
+  }
+
+  .molecule-dialog {
+    width: calc(100vw - 20px);
+    max-height: 94dvh;
+  }
+
+  .dialog-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 13px 15px;
+  }
+
+  .dialog-head h2 {
+    font-size: 25px;
+  }
+
+  .dialog-formula {
+    font-size: 26px;
+  }
+
+  .dialog-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dialog-preview {
+    min-height: 270px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .dialog-info {
+    padding: 15px;
+  }
+
+  .dialog-close {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .stage-topbar {
+    padding: 12px 15px 9px;
+  }
+
+  .stage-heading h3 {
+    font-size: 18px;
+  }
+
+  .stage-status {
+    padding: 8px 15px;
+  }
+
+  .stage-notice {
+    padding: 7px 15px 9px;
+  }
+
+  .theater-controls {
+    padding: 9px 14px;
+  }
+
+  .phase-overlay,
+  .volume-overlay {
+    padding: 7px 10px;
+  }
+
+  .phase-overlay strong {
+    font-size: 23px;
+  }
+
+  .volume-overlay strong {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .brand-copy {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+
+  .brand-sub {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .view-tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 2px;
+    overflow: visible;
+    padding: 3px;
+  }
+
+  .view-tab {
+    flex-direction: column;
+    justify-content: center;
+    padding: 5px 2px;
+    min-height: 50px;
+    font-size: 9.5px;
+    gap: 2px;
+  }
+
+  .view-tab svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .target-actions,
+  .specimen-actions {
+    flex-direction: column;
+  }
+
+  .target-actions .btn,
+  .specimen-actions .btn {
+    flex: none;
+  }
+
+  .state-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .state-summary div + div {
+    padding-left: 8px;
+  }
+
+  .state-summary strong {
+    font-size: 18px;
+  }
+
+  .element-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .element-button {
+    min-height: 44px;
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .element-orb {
+    width: 24px;
+    height: 24px;
+  }
+
+  .element-copy strong {
+    font-size: 10.5px;
+  }
+
+  .build-layout .stage-shell,
+  .states-stage,
+  .reaction-stage,
+  .quiz-stage {
+    min-height: 460px;
+  }
+
+  .stage-tools {
+    gap: 4px;
+  }
+
+  .tool-toggle {
+    min-height: 29px;
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .reaction-choice-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reaction-choice {
+    padding: 8px;
+  }
+
+  .reaction-choice-number,
+  .reaction-choice-copy small,
+  .reaction-list-note {
+    display: none;
+  }
+
+  .reaction-choice-copy strong {
+    font-size: 15px;
+  }
+
+  .specimen-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .range-ticks {
+    font-size: 7.5px;
+  }
+
+  .temp-readout strong {
+    font-size: 40px;
+  }
+
+  .quiz-panel h3 {
+    font-size: 23px;
+  }
+
+  .quiz-result {
+    padding: 22px 16px;
+  }
+
+  .quiz-result h3 {
+    font-size: 48px;
+  }
+
+  .theater-play {
+    min-width: 112px;
+  }
+
+  .transport {
+    gap: 4px;
+  }
+
+  .stage-shell .icon-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .formula-meta {
+    display: none;
+  }
+
+  .formula-inner {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .formula-value {
+    font-size: 27px;
+  }
+
+  .dialog-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .btn-pulse::after {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  .view,
+  .specimen-card {
+    animation: none;
+  }
+}
