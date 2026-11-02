@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { findSnapHost } from '../chem/bondRules';
 import { targetRelativePosition } from '../chem/targetGeometry';
+import { frameFromCamera, nearestHostOnScreen } from './screenSnap';
 import type { Atom, Vec3 } from '../chem/types';
 import { useBuildStore } from '../stores/buildStore';
 import { MoleculeModel } from './MoleculeModel';
@@ -17,6 +18,7 @@ interface DragState {
   startX: number;
   startY: number;
   moved: boolean;
+  pointerId?: number;
 }
 
 export function BuildScene() {
@@ -88,6 +90,13 @@ function BuildSceneContents() {
       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, atomPosition);
       const hit = new THREE.Vector3();
       if (!event.ray.intersectPlane(plane, hit)) return;
+      const pointerId =
+        typeof event.pointerId === 'number' && Number.isFinite(event.pointerId)
+          ? event.pointerId
+          : undefined;
+      if (pointerId !== undefined && !gl.domElement.hasPointerCapture(pointerId)) {
+        gl.domElement.setPointerCapture(pointerId);
+      }
       dragRef.current = {
         id: atom.id,
         plane,
@@ -95,6 +104,7 @@ function BuildSceneContents() {
         startX: event.clientX,
         startY: event.clientY,
         moved: false,
+        pointerId,
       };
       setDragging(true);
       gl.domElement.style.cursor = 'grabbing';
@@ -131,28 +141,70 @@ function BuildSceneContents() {
         moveAtom(drag.id, position);
       };
 
-      const handleUp = () => {
+      const releaseCapture = (captured: number | undefined) => {
+        if (captured !== undefined && gl.domElement.hasPointerCapture(captured)) {
+          gl.domElement.releasePointerCapture(captured);
+        }
+      };
+
+      const handleUp = (native: PointerEvent) => {
         cleanupRef.current?.();
         cleanupRef.current = null;
         const drag = dragRef.current;
         dragRef.current = null;
         setPreview(null);
+        releaseCapture(drag?.pointerId);
         gl.domElement.style.cursor = '';
         if (!drag) {
           setDragging(false);
           return;
         }
-        if (drag.moved) snapDraggedAtom(drag.id);
-        else setDragging(false);
+        if (!drag.moved) {
+          setDragging(false);
+          return;
+        }
+        const store = useBuildStore.getState();
+        const dragged = store.atoms.find((candidate) => candidate.id === drag.id);
+        if (dragged && findSnapHost(dragged, store.atoms, store.bonds)) {
+          snapDraggedAtom(drag.id);
+          return;
+        }
+        const rect = gl.domElement.getBoundingClientRect();
+        const hostId = nearestHostOnScreen(
+          { x: native.clientX, y: native.clientY },
+          drag.id,
+          store.atoms,
+          store.bonds,
+          frameFromCamera(camera, rect),
+        );
+        if (dragged && hostId) {
+          store.snapDraggedToHost(drag.id, hostId);
+          return;
+        }
+        setDragging(false);
+        store.setNotice('결합할 자리를 찾지 못했습니다. 다른 원자 가까이에 다시 놓아 보세요.');
+      };
+
+      const handleInterrupt = () => {
+        cleanupRef.current?.();
+        cleanupRef.current = null;
+        const interrupted = dragRef.current;
+        dragRef.current = null;
+        setPreview(null);
+        releaseCapture(interrupted?.pointerId);
+        gl.domElement.style.cursor = '';
+        setDragging(false);
       };
 
       window.addEventListener('pointermove', handleMove);
       window.addEventListener('pointerup', handleUp);
       window.addEventListener('pointercancel', handleUp);
+      window.addEventListener('blur', handleInterrupt);
       cleanupRef.current = () => {
         window.removeEventListener('pointermove', handleMove);
         window.removeEventListener('pointerup', handleUp);
         window.removeEventListener('pointercancel', handleUp);
+        window.removeEventListener('blur', handleInterrupt);
       };
     },
     [

@@ -25,6 +25,30 @@ describe('workbench history', () => {
   });
 });
 
+describe('screen-space snap fallback', () => {
+  it('snaps a dragged atom directly onto a chosen host', () => {
+    useBuildStore.getState().loadMolecule('h2o', 'target');
+    useBuildStore.getState().snapDraggedToHost('a2', 'a1');
+    const state = useBuildStore.getState();
+    expect(state.bonds).toHaveLength(1);
+    const verdict = evaluateTarget(state.atoms, state.bonds, getMolecule('h2o'));
+    expect(verdict.complete).toBe(false);
+    useBuildStore.getState().snapDraggedToHost('a3', 'a1');
+    const done = useBuildStore.getState();
+    expect(evaluateTarget(done.atoms, done.bonds, getMolecule('h2o')).complete).toBe(true);
+  });
+
+  it('refuses a full host without crashing', () => {
+    useBuildStore.getState().loadMolecule('h2o', 'complete');
+    useBuildStore.getState().addAtom('H');
+    const added = useBuildStore.getState().atoms[useBuildStore.getState().atoms.length - 1];
+    useBuildStore.getState().snapDraggedToHost(added.id, 'a1');
+    const state = useBuildStore.getState();
+    expect(state.bonds).toHaveLength(2);
+    expect(state.notice).toContain('가득 찼습니다');
+  });
+});
+
 describe('guided target assembly', () => {
   beforeEach(() => {
     useBuildStore.getState().loadMolecule('h2o', 'target');

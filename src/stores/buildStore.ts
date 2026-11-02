@@ -53,6 +53,7 @@ interface BuildState {
   setMeasureTarget: (id: string | null) => void;
   moveAtom: (id: string, position: Vec3) => void;
   snapDraggedAtom: (id: string) => void;
+  snapDraggedToHost: (draggedId: string, hostId: string) => void;
   bondSelectedTo: (hostId: string) => void;
   autoBondSelected: () => void;
   loadMolecule: (id: string, mode: 'complete' | 'target') => void;
@@ -214,6 +215,68 @@ export const useBuildStore = create<BuildState>((set, get) => ({
       ),
       selectedAtomId: id,
       dragging: true,
+    });
+  },
+
+  snapDraggedToHost: (draggedId, hostId) => {
+    const state = get();
+    const dragged = state.atoms.find((candidate) => candidate.id === draggedId);
+    const host = state.atoms.find((candidate) => candidate.id === hostId);
+    if (!dragged || !host || dragged.id === host.id) return;
+    if (state.bonds.some((bond) => isSameBond(bond, dragged.id, host.id))) {
+      set({
+        dragging: false,
+        selectedAtomId: dragged.id,
+        notice: '이미 결합된 두 원자입니다.',
+      });
+      return;
+    }
+    const hostBonds = state.bonds.filter((bond) => bond.a === host.id || bond.b === host.id);
+    const hostPorts = portsFor(host.element);
+    if (
+      hostBonds.length >= hostPorts.length ||
+      hostPorts.length < portsFor(dragged.element).length
+    ) {
+      set({
+        dragging: false,
+        selectedAtomId: dragged.id,
+        notice: `${ELEMENTS[host.element].nameKo} 원자는 결합할 자리가 가득 찼습니다.`,
+      });
+      return;
+    }
+    const port = bestPortFor(host, dragged.position, hostBonds, state.atoms);
+    if (!port) {
+      set({
+        dragging: false,
+        selectedAtomId: dragged.id,
+        notice: `${ELEMENTS[host.element].nameKo} 원자는 결합할 자리가 가득 찼습니다.`,
+      });
+      return;
+    }
+    const targetGeometry = targetRelativePosition(state.targetId, dragged, host);
+    set({
+      atoms: state.atoms.map((candidate) =>
+        candidate.id === dragged.id
+          ? {
+              ...candidate,
+              position: targetGeometry?.position ?? add(host.position, scale(port, SINGLE_BOND_LENGTH)),
+            }
+          : candidate,
+      ),
+      bonds: [
+        ...state.bonds,
+        {
+          id: `b${state.bondSerial}`,
+          a: dragged.id,
+          b: host.id,
+          order: targetGeometry?.order ?? 1,
+          ionic: targetGeometry?.ionic,
+        },
+      ],
+      bondSerial: state.bondSerial + 1,
+      selectedAtomId: host.id,
+      dragging: false,
+      notice: `${ELEMENTS[host.element].nameKo}–${ELEMENTS[dragged.element].nameKo} 결합이 만들어졌습니다.`,
     });
   },
 
